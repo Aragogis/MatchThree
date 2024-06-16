@@ -4,9 +4,8 @@ using UnityEngine;
 
 public class Gem : MonoBehaviour
 {
-    [SerializeField] GemType type;
-    public int colPos;
-    public int rowPos;
+    [SerializeField] public GemType type;
+    public Vector2 pos;
 
     // Start is called before the first frame update
     void Start()

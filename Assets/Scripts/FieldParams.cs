@@ -6,7 +6,8 @@ public enum GemType
 {
     Red,
     Green,
-    Blue
+    Blue,
+    Yellow
 }
 public enum GameState
 {
@@ -18,5 +19,5 @@ public class FieldParams
 {
     public static int rows = 12;
     public static int cols = 8;
-    public static float swapDuration = 1f;
+    public static float swapDuration = 0.25f;
 }

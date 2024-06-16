@@ -6,10 +6,10 @@ using UnityEngine.UIElements;
 
 public class Utilities : MonoBehaviour
 {
-    internal static bool AreNeighbours(GameObject gemHit, GameObject gemHit2)
+    internal static bool AreNeighbours(Gem gemHit, Gem gemHit2)
     {
-
-        return (gemHit.GetComponent<Gem>().rowPos == gemHit2.GetComponent<Gem>().rowPos || gemHit.GetComponent<Gem>().colPos == gemHit2.GetComponent<Gem>().colPos);
+        return ((gemHit.pos.x == gemHit2.pos.x) && ((gemHit.pos.y == gemHit2.pos.y + 1) || (gemHit.pos.y == gemHit2.pos.y - 1)))
+            || (((gemHit.pos.y == gemHit2.pos.y) && ((gemHit.pos.x == gemHit2.pos.x + 1) || (gemHit.pos.x == gemHit2.pos.x - 1))));
     }
 
     // Start is called before the first frame update
