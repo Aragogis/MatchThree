@@ -4,46 +4,72 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Random = UnityEngine.Random;
 
 public class GemManager : MonoBehaviour
 {
-    [SerializeField] GameObject[] gemVariants;
     [SerializeField] Transform gemSpawnAnchor;
-    [SerializeField] List<GameObject> serializedGemArray;
 
+    [SerializeField] public GameObject[] gemVariants;
     private GameState state = GameState.None;
     private GameObject gemHit;
-    private Vector3 velocity1 = Vector3.zero;
-    private Vector3 velocity2 = Vector3.zero;
+    private GemArray gemArray = new GemArray(FieldParams.rows, FieldParams.cols);
+    private Queue<IEnumerator> coroutineQueue = new Queue<IEnumerator>();
+    private Vector3 velocity1;
+    private Vector3 velocity2;
 
-    GameObject[,] gemArray = new GameObject[FieldParams.rows, FieldParams.cols];
 
-void Awake()
+    internal GameObject GetNewGem()
+    {
+        return gemVariants[Random.Range(0, gemVariants.Length)];
+    }
+
+    internal GameObject GetNewGem(GameObject prevGem)
+    {
+        GameObject gem = gemVariants[Random.Range(0, gemVariants.Length)];
+        while (gem.GetComponent<Gem>().type == prevGem.GetComponent<Gem>().type)
+        {
+            gem = GetNewGem();
+        }
+        return gem;
+    }
+
+    void Awake()
     {
         InitializeGameField();
-        foreach (var gem in gemArray)
-        {
-            serializedGemArray.Add(gem);
-        }
+        StartCoroutine(CoroutineCoordinator());
     }
 
     private void InitializeGameField()
     {
+
         // find spawn positions for gems, generate gems, check for right gem arrangement
-        for(int i = 0; i < FieldParams.rows; i++)
+        for (int i = 0; i < FieldParams.rows; i++)
         {
+
             for(int j = 0; j < FieldParams.cols; j++)
             {
-                GameObject newGem = gemVariants[UnityEngine.Random.Range(0, gemVariants.Length)];
+                GameObject newGem = GetNewGem();
+                if (i - 1 > 0 && gemArray[i-1,j].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
+                {
+                    newGem = GetNewGem(newGem);
+                }
+                if (j - 1 > 0 && gemArray[i, j-1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
+                {
+                    newGem = GetNewGem(newGem);
+                }
                 float xPos = gemSpawnAnchor.position.x + j;
                 float yPos = gemSpawnAnchor.position.y - i;
-                gemArray[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos,yPos), Quaternion.identity);
+                gemArray[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos,yPos), Quaternion.identity) as GameObject;
                 gemArray[i, j].GetComponent<Gem>().pos.x = i;
                 gemArray[i, j].GetComponent<Gem>().pos.y = j;
+                
             }
         }
+
     }
 
     void Update()
@@ -78,9 +104,12 @@ void Awake()
                     }
                     else
                     {
+                        state = GameState.Animating;
                         Vector3 startPos1 = gemHit.transform.position;
                         Vector3 startPos2 = hit.transform.position;
-                        StartCoroutine(AnimateSwap(gemHit, hit.collider.gameObject, startPos1, startPos2));
+                        coroutineQueue.Enqueue(AnimateSwap(gemHit, hit.collider.gameObject, startPos1, startPos2));
+                        coroutineQueue.Enqueue(FindMatchesAndCollapse(gemHit));
+                        coroutineQueue.Enqueue(FindMatchesAndCollapse(hit.collider.gameObject));
                         state = GameState.None;
                         velocity1 = Vector3.zero;
                         velocity2 = Vector3.zero;
@@ -90,28 +119,77 @@ void Awake()
             }
         }
     }
-    //private IEnumerator DestroyAndSpawnNewGem(GameObject gem)
-    //{
-    //    float timeElapsed = 0f;
-    //    GameObject newGem = gemArray[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y] = Instantiate<GameObject>(gemVariants[UnityEngine.Random.Range(0, gemVariants.Length)], gem.transform.position, Quaternion.identity);
-    //    newGem.transform.localScale = Vector3.zero;
-    //    newGem.GetComponent<Gem>().pos = gem.GetComponent<Gem>().pos;
-    //    while(timeElapsed < FieldParams.swapDuration+1f)
-    //    {
-    //        newGem.transform.localScale = Vector3.Lerp(Vector3.zero, gem.transform.localScale,0.5f);
-    //        timeElapsed += Time.deltaTime;
 
-    //    }
-    //    Destroy(gem);
-    //    yield return null;
-    //}
-    private IEnumerator AnimateSwap(GameObject gemHit, GameObject gemHit2, Vector3 startPos1, Vector3 startPos2)
+    internal IEnumerator FindMatchesAndCollapse(GameObject hit)
+    {
+        List<GameObject> verticalMatches = new List<GameObject>();
+        List<GameObject> horizontalMatches = new List<GameObject>();
+        Gem gem = hit.GetComponent<Gem>();
+        verticalMatches.Add(hit);
+        horizontalMatches.Add(hit);
+        for (int i = 1; gem.pos.x - i >= 0; i++)
+        {
+            if (gemArray[((int)gem.pos.x - i), (int)gem.pos.y] != null && gem.type == gemArray[((int)gem.pos.x - i), (int)gem.pos.y].GetComponent<Gem>().type)
+            {
+                verticalMatches.Add(gemArray[(int)gem.pos.x - i, (int)gem.pos.y]);
+            }
+            else break;
+        }
+        for (int j = 1; gem.pos.x + j < FieldParams.rows; j++)
+        {
+            if (gemArray[((int)gem.pos.x + j), (int)gem.pos.y] != null && gem.type == gemArray[((int)gem.pos.x + j), (int)gem.pos.y].GetComponent<Gem>().type)
+            {
+                verticalMatches.Add(gemArray[(int)gem.pos.x + j, (int)gem.pos.y]);
+            }
+            else break;
+        }
+
+
+        for (int k = 1; gem.pos.y - k >= 0; k++)
+        {
+            if (gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)] != null && gem.type == gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)].GetComponent<Gem>().type)
+            {
+                horizontalMatches.Add(gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)]);
+            }
+            else break;
+        }
+        for (int l = 1; gem.pos.y + l < FieldParams.cols; l++)
+        {
+            if (gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)] != null && gem.type == gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)].GetComponent<Gem>().type)
+            {
+                horizontalMatches.Add(gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)]);
+            }
+            else break;
+        }
+
+        verticalMatches = verticalMatches.Distinct().ToList();
+        horizontalMatches = horizontalMatches.Distinct().ToList();
+        if (verticalMatches.Count >= 3)
+        {
+            foreach (GameObject go in verticalMatches)
+            {
+                //gemArray[(int)go.GetComponent<Gem>().pos.x, (int)go.GetComponent<Gem>().pos.y] = null;
+                DestroyAndSpawnNewGem(go);
+            }
+        }
+
+        if (horizontalMatches.Count >= 3)
+        {
+            foreach (GameObject go in horizontalMatches)
+            {
+                // gemArray[(int)go.GetComponent<Gem>().pos.x, (int)go.GetComponent<Gem>().pos.y] = null;
+                DestroyAndSpawnNewGem(go);
+            }
+        }
+        yield return null;
+    }
+    public IEnumerator AnimateSwap(GameObject gemHit, GameObject gemHit2, Vector3 startPos1, Vector3 startPos2)
     {
 
-        
+
         float timeElapsed = 0;
 
-        while (timeElapsed < FieldParams.swapDuration+1f)
+        while (timeElapsed < FieldParams.swapDuration + 1f)
         {
             gemHit.transform.position = Vector3.SmoothDamp(gemHit.transform.position, startPos2, ref velocity1, FieldParams.swapDuration);
             gemHit2.transform.position = Vector3.SmoothDamp(gemHit2.transform.position, startPos1, ref velocity2, FieldParams.swapDuration);
@@ -122,69 +200,35 @@ void Awake()
         gemHit2.transform.position = startPos1;
         Vector2 tempPos = gemHit.GetComponent<Gem>().pos;
         gemHit.GetComponent<Gem>().pos = gemHit2.GetComponent<Gem>().pos;
-        gemHit2.GetComponent <Gem>().pos = tempPos;
-        StartCoroutine(FindMatchesAndCollapse(gemHit));
+        gemHit2.GetComponent<Gem>().pos = tempPos;
     }
-    private IEnumerator FindMatchesAndCollapse(GameObject hit)
+
+
+    internal void DestroyAndSpawnNewGem(GameObject gem)
     {
-        Gem gem = hit.GetComponent<Gem>();
-        List<GameObject> horizontalMatches = new List<GameObject>();
-        List<GameObject> verticalMatches = new List<GameObject>();
-        horizontalMatches.Add(hit);
-        verticalMatches.Add(hit);
-        for(int i = 1; gem.pos.x - i > 0 ; i++) 
-        {
-            if(gem.type == gemArray[((int)gem.pos.x - i), (int)gem.pos.y].GetComponent<Gem>().type)
-            {
-                horizontalMatches.Add(gemArray[(int)gem.pos.x - i, (int)gem.pos.y]);
-            }
-            else break;
-        }
-        for(int j = 1; gem.pos.x + j < FieldParams.rows; j++)
-        {
-            if (gem.type == gemArray[((int)gem.pos.x + j), (int)gem.pos.y].GetComponent<Gem>().type)
-            {
-                horizontalMatches.Add(gemArray[(int)gem.pos.x + j, (int)gem.pos.y]);
-            }
-            else break;
-        }
+        var pos = gem.GetComponent<Gem>().pos;
+        Destroy(gem);
 
+        GameObject newGem = Instantiate<GameObject>(GetNewGem(gem), gem.transform.position, Quaternion.identity) as GameObject;
+        //if((gemArray[(int)gem.GetComponent<Gem>().pos.x + 1, (int)gem.GetComponent<Gem>().pos.y].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type &&
+        //   gemArray[(int)gem.GetComponent<Gem>().pos.x - 1, (int)gem.GetComponent<Gem>().pos.y].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)||
+        //   (gemArray[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y + 1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type &&
+        //   gemArray[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y - 1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type))
+        //{
+        //    newGem = GetNewGem(newGem);
+        //}
+        newGem.GetComponent<Gem>().pos = pos;
+        gemArray[(int)newGem.GetComponent<Gem>().pos.x, (int)newGem.GetComponent<Gem>().pos.y] = newGem;
 
-        for(int k = 1; gem.pos.y - k > 0 ; k++)
-        {
-            if (gem.type == gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)].GetComponent<Gem>().type)
-            {
-                verticalMatches.Add(gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)]);
-            }
-            else break;
-        }
-        for (int l = 1; gem.pos.y + l < FieldParams.cols; l++)
-        {
-            if (gem.type == gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)].GetComponent<Gem>().type)
-            {
-                verticalMatches.Add(gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)]);
-            }
-            else break;
-        }
+    }
 
-        if (horizontalMatches.Count >= 3)
+    private IEnumerator CoroutineCoordinator()
+    {
+        while (true)
         {
-            foreach (GameObject go in horizontalMatches)
-            {
-                gemArray[(int)go.GetComponent<Gem>().pos.x, (int)go.GetComponent<Gem>().pos.y] = null;
-                Destroy(go);
-            }
+            while (coroutineQueue.Count > 0)
+                yield return StartCoroutine(coroutineQueue.Dequeue());
+            yield return null;
         }
-
-        if(verticalMatches.Count >= 3)
-        {
-            foreach (GameObject go in verticalMatches)
-            {
-                gemArray[(int)go.GetComponent<Gem>().pos.x, (int)go.GetComponent<Gem>().pos.y] = null;
-                Destroy(go);
-            }
-        }
-
-        yield return null;
     }
 }
