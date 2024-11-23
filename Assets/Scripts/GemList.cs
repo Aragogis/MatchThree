@@ -85,6 +85,16 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
         // Combine row and column matches and return as a list of GameObjects
         return rowMatches.Concat(colMatches).ToList();
     }
+
+    public List<GameObject> FindMatches()
+    {
+        List<GameObject> matches = new List<GameObject>();
+        foreach(var gem in this)
+        {
+            matches.AddRange(FindMatches(gem.GetComponent<Gem>()));
+        }
+        return matches.Distinct().ToList();
+    }
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();

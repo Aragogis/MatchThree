@@ -31,7 +31,7 @@ public class GemManager : MonoBehaviour
         return gem;
     }
 
-    void Awake()
+    void Start()
     {
         gemList = FindObjectOfType<GemList>();
         InitializeGameField();
@@ -149,14 +149,25 @@ public class GemManager : MonoBehaviour
         matches = gemList.FindMatches(currentPair[0].GetComponent<Gem>());
         matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<Gem>()));
         var uniqueMatches = matches.Distinct().ToList();
+
+        if (uniqueMatches.Count < 3)
+        {
+            yield return StartCoroutine(AnimateSwap(currentPair));
+            yield break;
+        }
+        DestroyGems(uniqueMatches);
+
+        if (gemList.Any(gem => gem == null)) Debug.Log("nulls are there after finding matches");
+    }
+
+    private void DestroyGems(List<GameObject> uniqueMatches)
+    {
         foreach (var gem in uniqueMatches)
         {
             var tempPos = gem.GetComponent<Gem>().pos;
             Destroy(gem.gameObject);
             gemList[(int)tempPos.x, (int)tempPos.y] = null;
         }
-
-        if (gemList.Any(gem => gem == null)) Debug.Log("nulls are there after finding matches");
     }
 
     IEnumerator DropGems(GameObject[] currentPair)
@@ -191,7 +202,7 @@ public class GemManager : MonoBehaviour
 
                 while (t < 1f)
                 {
-                    t += Time.deltaTime * FieldParams.swapDuration;
+                    t += Time.deltaTime * FieldParams.swapDuration*4;
 
                     gem.transform.position = Vector3.Lerp(startPos, endPos, t);
 
@@ -200,6 +211,7 @@ public class GemManager : MonoBehaviour
 
                 gem.transform.position = endPos;
                 gem.GetComponent<Gem>().UpdatePos();
+                gemList[(int)startPos.x, (int)startPos.y] = null;
             }
 
             gemsToDrop.Clear();
@@ -208,7 +220,9 @@ public class GemManager : MonoBehaviour
                 if (gemList[column, FieldParams.rows - 1] == null)
                 {
                     GameObject newGem = GetNewGem();
-                    //gemList[column, FieldParams.rows - 1] = newGem;
+                    gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity) as GameObject;
+                    gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos.x = column;
+                    gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos.y = FieldParams.rows - 1;
                     Debug.Log("we have an empty top!");
                 }
             }

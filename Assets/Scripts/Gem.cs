@@ -4,16 +4,16 @@ public class Gem : MonoBehaviour
 {
     [SerializeField] public GemType type;
     public Vector3 pos;
-    private GemList gemArray;
+    private GemList gemList;
     // Start is called before the first frame update
     void Start()
     {
-        this.gemArray = FindObjectOfType<GemList>();
+        this.gemList = FindObjectOfType<GemList>();
     }
     public void UpdatePos()
     {
         this.pos = this.transform.position;
-        gemArray[(int)pos.x, (int)pos.y] = this.gameObject;
+        gemList[(int)pos.x, (int)pos.y] = this.gameObject;
     }
     // Update is called once per frame
     void Update()
