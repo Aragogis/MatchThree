@@ -1,10 +1,6 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
-using System.Text.RegularExpressions;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
@@ -16,10 +12,8 @@ public class GemManager : MonoBehaviour
     [SerializeField] public GameObject[] gemVariants;
     private GameState state = GameState.None;
     private GameObject gemHit;
-    private GemArray gemArray = new GemArray(FieldParams.rows, FieldParams.cols);
-    private Queue<IEnumerator> coroutineQueue = new Queue<IEnumerator>();
-    private Vector3 velocity1;
-    private Vector3 velocity2;
+    private GemList gemList;
+    private GameObject[] currentPair = new GameObject[2];
 
 
     internal GameObject GetNewGem()
@@ -29,7 +23,7 @@ public class GemManager : MonoBehaviour
 
     internal GameObject GetNewGem(GameObject prevGem)
     {
-        GameObject gem = gemVariants[Random.Range(0, gemVariants.Length)];
+        GameObject gem = GetNewGem();
         while (gem.GetComponent<Gem>().type == prevGem.GetComponent<Gem>().type)
         {
             gem = GetNewGem();
@@ -39,34 +33,34 @@ public class GemManager : MonoBehaviour
 
     void Awake()
     {
+        gemList = FindObjectOfType<GemList>();
         InitializeGameField();
-        StartCoroutine(CoroutineCoordinator());
     }
 
     private void InitializeGameField()
     {
 
         // find spawn positions for gems, generate gems, check for right gem arrangement
-        for (int i = 0; i < FieldParams.rows; i++)
+        for (int i = 0; i < FieldParams.cols; i++)
         {
 
-            for(int j = 0; j < FieldParams.cols; j++)
+            for (int j = 0; j < FieldParams.rows; j++)
             {
                 GameObject newGem = GetNewGem();
-                if (i - 1 > 0 && gemArray[i-1,j].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
+                if (i - 1 > 0 && gemList[i - 1, j].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
                 {
                     newGem = GetNewGem(newGem);
                 }
-                if (j - 1 > 0 && gemArray[i, j-1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
+                if (j - 1 > 0 && gemList[i, j - 1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
                 {
                     newGem = GetNewGem(newGem);
                 }
-                float xPos = gemSpawnAnchor.position.x + j;
-                float yPos = gemSpawnAnchor.position.y - i;
-                gemArray[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos,yPos), Quaternion.identity) as GameObject;
-                gemArray[i, j].GetComponent<Gem>().pos.x = i;
-                gemArray[i, j].GetComponent<Gem>().pos.y = j;
-                
+                float xPos = gemSpawnAnchor.position.x + i;
+                float yPos = gemSpawnAnchor.position.y + j;
+                gemList[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos, yPos), Quaternion.identity) as GameObject;
+                gemList[i, j].GetComponent<Gem>().pos.x = i;
+                gemList[i, j].GetComponent<Gem>().pos.y = j;
+
             }
         }
 
@@ -96,139 +90,133 @@ public class GemManager : MonoBehaviour
             {
 
                 var hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
-                if(hit.collider != null & hit.collider.gameObject != gemHit)
+                if (hit.collider != null & gemHit != null & hit.collider.gameObject != gemHit)
                 {
-                    if(!Utilities.AreNeighbours(gemHit.gameObject.GetComponent<Gem>(), hit.collider.gameObject.GetComponent<Gem>()))
+                    if (!Utilities.AreNeighbours(gemHit.gameObject.GetComponent<Gem>(), hit.collider.gameObject.GetComponent<Gem>()))
                     {
                         state = GameState.None;
                     }
                     else
                     {
                         state = GameState.Animating;
-                        Vector3 startPos1 = gemHit.transform.position;
-                        Vector3 startPos2 = hit.transform.position;
-                        coroutineQueue.Enqueue(AnimateSwap(gemHit, hit.collider.gameObject, startPos1, startPos2));
-                        coroutineQueue.Enqueue(FindMatchesAndCollapse(gemHit));
-                        coroutineQueue.Enqueue(FindMatchesAndCollapse(hit.collider.gameObject));
-                        state = GameState.None;
-                        velocity1 = Vector3.zero;
-                        velocity2 = Vector3.zero;
+
+                        currentPair[0] = gemHit;
+                        currentPair[1] = hit.collider.gameObject;
+
+                        StartCoroutine(DropGems(currentPair));
+
+                        //check triples and >, return list of gems
+
+
+                        //destroy matches
+                        //spawn new gems
+                        //count points
+
 
                     }
                 }
             }
         }
     }
-
-    internal IEnumerator FindMatchesAndCollapse(GameObject hit)
+    IEnumerator AnimateSwap(GameObject[] currentPair)
     {
-        List<GameObject> verticalMatches = new List<GameObject>();
-        List<GameObject> horizontalMatches = new List<GameObject>();
-        Gem gem = hit.GetComponent<Gem>();
-        verticalMatches.Add(hit);
-        horizontalMatches.Add(hit);
-        for (int i = 1; gem.pos.x - i >= 0; i++)
-        {
-            if (gemArray[((int)gem.pos.x - i), (int)gem.pos.y] != null && gem.type == gemArray[((int)gem.pos.x - i), (int)gem.pos.y].GetComponent<Gem>().type)
-            {
-                verticalMatches.Add(gemArray[(int)gem.pos.x - i, (int)gem.pos.y]);
-            }
-            else break;
-        }
-        for (int j = 1; gem.pos.x + j < FieldParams.rows; j++)
-        {
-            if (gemArray[((int)gem.pos.x + j), (int)gem.pos.y] != null && gem.type == gemArray[((int)gem.pos.x + j), (int)gem.pos.y].GetComponent<Gem>().type)
-            {
-                verticalMatches.Add(gemArray[(int)gem.pos.x + j, (int)gem.pos.y]);
-            }
-            else break;
-        }
+        Vector3 startPosFirst = currentPair[0].GetComponent<Gem>().pos;
+        Vector3 startPosSecond = currentPair[1].GetComponent<Gem>().pos;
 
+        float t = 0;
 
-        for (int k = 1; gem.pos.y - k >= 0; k++)
+        while (t < 1f)
         {
-            if (gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)] != null && gem.type == gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)].GetComponent<Gem>().type)
-            {
-                horizontalMatches.Add(gemArray[(int)gem.pos.x, ((int)gem.pos.y - k)]);
-            }
-            else break;
-        }
-        for (int l = 1; gem.pos.y + l < FieldParams.cols; l++)
-        {
-            if (gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)] != null && gem.type == gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)].GetComponent<Gem>().type)
-            {
-                horizontalMatches.Add(gemArray[(int)gem.pos.x, ((int)gem.pos.y + l)]);
-            }
-            else break;
-        }
+            t += Time.deltaTime * FieldParams.swapDuration;
 
-        verticalMatches = verticalMatches.Distinct().ToList();
-        horizontalMatches = horizontalMatches.Distinct().ToList();
-        if (verticalMatches.Count >= 3)
-        {
-            foreach (GameObject go in verticalMatches)
-            {
-                //gemArray[(int)go.GetComponent<Gem>().pos.x, (int)go.GetComponent<Gem>().pos.y] = null;
-                DestroyAndSpawnNewGem(go);
-            }
-        }
+            currentPair[0].transform.position = Vector3.Lerp(startPosFirst, startPosSecond, t);
+            currentPair[1].transform.position = Vector3.Lerp(startPosSecond, startPosFirst, t);
 
-        if (horizontalMatches.Count >= 3)
-        {
-            foreach (GameObject go in horizontalMatches)
-            {
-                // gemArray[(int)go.GetComponent<Gem>().pos.x, (int)go.GetComponent<Gem>().pos.y] = null;
-                DestroyAndSpawnNewGem(go);
-            }
-        }
-        yield return null;
-    }
-    public IEnumerator AnimateSwap(GameObject gemHit, GameObject gemHit2, Vector3 startPos1, Vector3 startPos2)
-    {
-
-
-        float timeElapsed = 0;
-
-        while (timeElapsed < FieldParams.swapDuration + 1f)
-        {
-            gemHit.transform.position = Vector3.SmoothDamp(gemHit.transform.position, startPos2, ref velocity1, FieldParams.swapDuration);
-            gemHit2.transform.position = Vector3.SmoothDamp(gemHit2.transform.position, startPos1, ref velocity2, FieldParams.swapDuration);
-            timeElapsed += Time.deltaTime;
             yield return null;
         }
-        gemHit.transform.position = startPos2;
-        gemHit2.transform.position = startPos1;
-        Vector2 tempPos = gemHit.GetComponent<Gem>().pos;
-        gemHit.GetComponent<Gem>().pos = gemHit2.GetComponent<Gem>().pos;
-        gemHit2.GetComponent<Gem>().pos = tempPos;
+
+        currentPair[0].transform.position = startPosSecond;
+        currentPair[1].transform.position = startPosFirst;
+
+        currentPair[0].GetComponent<Gem>().UpdatePos();
+        currentPair[1].GetComponent<Gem>().UpdatePos();
     }
 
-
-    internal void DestroyAndSpawnNewGem(GameObject gem)
+    IEnumerator FindMatches(GameObject[] currentPair)
     {
-        var pos = gem.GetComponent<Gem>().pos;
-        Destroy(gem);
-
-        GameObject newGem = Instantiate<GameObject>(GetNewGem(gem), gem.transform.position, Quaternion.identity) as GameObject;
-        //if((gemArray[(int)gem.GetComponent<Gem>().pos.x + 1, (int)gem.GetComponent<Gem>().pos.y].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type &&
-        //   gemArray[(int)gem.GetComponent<Gem>().pos.x - 1, (int)gem.GetComponent<Gem>().pos.y].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)||
-        //   (gemArray[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y + 1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type &&
-        //   gemArray[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y - 1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type))
-        //{
-        //    newGem = GetNewGem(newGem);
-        //}
-        newGem.GetComponent<Gem>().pos = pos;
-        gemArray[(int)newGem.GetComponent<Gem>().pos.x, (int)newGem.GetComponent<Gem>().pos.y] = newGem;
-
-    }
-
-    private IEnumerator CoroutineCoordinator()
-    {
-        while (true)
+        yield return StartCoroutine(AnimateSwap(currentPair));
+        List<GameObject> matches = new List<GameObject>();
+        matches = gemList.FindMatches(currentPair[0].GetComponent<Gem>());
+        matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<Gem>()));
+        var uniqueMatches = matches.Distinct().ToList();
+        foreach (var gem in uniqueMatches)
         {
-            while (coroutineQueue.Count > 0)
-                yield return StartCoroutine(coroutineQueue.Dequeue());
-            yield return null;
+            var tempPos = gem.GetComponent<Gem>().pos;
+            Destroy(gem.gameObject);
+            gemList[(int)tempPos.x, (int)tempPos.y] = null;
         }
+
+        if (gemList.Any(gem => gem == null)) Debug.Log("nulls are there after finding matches");
     }
+
+    IEnumerator DropGems(GameObject[] currentPair)
+    {
+        if (gemList.Any(gem => gem == null)) Debug.Log("nulls are there before finding matches");
+        yield return StartCoroutine(FindMatches(currentPair));
+        List<GameObject> gemsToDrop = new List<GameObject>();
+        // Iterate through all gems in the gemList
+        while (gemList.Any(gem => gem == null))
+        {
+            foreach (var gem in gemList)
+            {
+                if (gem != null)
+                {
+                    // Check if the position below the gem is within bounds and null
+                    if (gem.GetComponent<Gem>().pos.y - 1 >= 0) // Check if we're not at the bottom row
+                    {
+                        // Check if the space below the gem is empty (null)
+                        if (gemList[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y - 1] == null)
+                        {
+                            // If the space is empty, start dropping the gem
+                            gemsToDrop.Add(gem);
+                        }
+                    }
+                }
+            }
+            foreach (var gem in gemsToDrop)
+            {
+                Vector3 startPos = gem.GetComponent<Gem>().pos;
+                Vector3 endPos = new Vector3(startPos.x, startPos.y - 1);
+                float t = 0;
+
+                while (t < 1f)
+                {
+                    t += Time.deltaTime * FieldParams.swapDuration;
+
+                    gem.transform.position = Vector3.Lerp(startPos, endPos, t);
+
+                    yield return null;
+                }
+
+                gem.transform.position = endPos;
+                gem.GetComponent<Gem>().UpdatePos();
+            }
+
+            gemsToDrop.Clear();
+            for (int column = 0; column < FieldParams.cols; column++)
+            {
+                if (gemList[column, FieldParams.rows - 1] == null)
+                {
+                    GameObject newGem = GetNewGem();
+                    //gemList[column, FieldParams.rows - 1] = newGem;
+                    Debug.Log("we have an empty top!");
+                }
+            }
+        }
+        state = GameState.None;
+    }
+
 }
+
+
+    

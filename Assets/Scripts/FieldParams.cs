@@ -1,7 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
 public enum GemType
 {
     Red,
@@ -17,7 +13,7 @@ public enum GameState
 }
 public class FieldParams
 {
-    public static int rows = 12;
     public static int cols = 8;
-    public static float swapDuration = 0.25f;
+    public static int rows = 12;
+    public static float swapDuration = 2.5f;
 }

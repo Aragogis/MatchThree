@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8142947326301280204}
   - component: {fileID: 2557819708963103678}
   - component: {fileID: -3839391626260089206}
+  - component: {fileID: -5271820422798339406}
   m_Layer: 0
   m_Name: gem_blue
   m_TagString: Untagged
@@ -99,8 +100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   type: 2
-  colPos: 0
-  rowPos: 0
+  pos: {x: 0, y: 0, z: 0}
 --- !u!61 &-3839391626260089206
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -125,5 +125,26 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1.4, y: 1.4}
   m_EdgeRadius: 0
+--- !u!50 &-5271820422798339406
+Rigidbody2D:
+  serializedVersion: 4
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5215004521899919654}
+  m_BodyType: 2
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDrag: 0
+  m_AngularDrag: 0
+  m_GravityScale: 1
+  m_Material: {fileID: 0}
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 5

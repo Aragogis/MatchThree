@@ -7,6 +7,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -8602252783710180566, guid: 172b0fb7d83fee849ba6cf2eaee3d96e, type: 3}
+      propertyPath: m_Constraints
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 1963814795179650238, guid: 172b0fb7d83fee849ba6cf2eaee3d96e, type: 3}
       propertyPath: m_Name
       value: gem_yellow
