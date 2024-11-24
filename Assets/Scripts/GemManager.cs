@@ -13,13 +13,14 @@ public class GemManager : MonoBehaviour
     private GameState state = GameState.None;
     private GameObject gemHit;
     private GemList gemList;
-    private GameObject[] currentPair = new GameObject[2];
+    private List<GameObject> currentPair = new List<GameObject>();
 
 
     internal GameObject GetNewGem()
     {
         return gemVariants[Random.Range(0, gemVariants.Length)];
     }
+
 
     internal GameObject GetNewGem(GameObject prevGem)
     {
@@ -31,11 +32,13 @@ public class GemManager : MonoBehaviour
         return gem;
     }
 
+
     void Start()
     {
         gemList = FindObjectOfType<GemList>();
         InitializeGameField();
     }
+
 
     private void InitializeGameField()
     {
@@ -65,6 +68,7 @@ public class GemManager : MonoBehaviour
         }
 
     }
+
 
     void Update()
     {
@@ -100,8 +104,8 @@ public class GemManager : MonoBehaviour
                     {
                         state = GameState.Animating;
 
-                        currentPair[0] = gemHit;
-                        currentPair[1] = hit.collider.gameObject;
+                        currentPair.Add(gemHit);
+                        currentPair.Add(hit.collider.gameObject);
 
                         StartCoroutine(DropGems(currentPair));
 
@@ -118,7 +122,9 @@ public class GemManager : MonoBehaviour
             }
         }
     }
-    IEnumerator AnimateSwap(GameObject[] currentPair)
+
+
+    IEnumerator AnimateSwap(List<GameObject> currentPair)
     {
         Vector3 startPosFirst = currentPair[0].GetComponent<Gem>().pos;
         Vector3 startPosSecond = currentPair[1].GetComponent<Gem>().pos;
@@ -142,10 +148,11 @@ public class GemManager : MonoBehaviour
         currentPair[1].GetComponent<Gem>().UpdatePos();
     }
 
-    IEnumerator FindMatches(GameObject[] currentPair)
+
+    IEnumerator FindMatches(List<GameObject> currentPair)
     {
         yield return StartCoroutine(AnimateSwap(currentPair));
-        List<GameObject> matches = new List<GameObject>();
+        List<GameObject> matches;
         matches = gemList.FindMatches(currentPair[0].GetComponent<Gem>());
         matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<Gem>()));
         var uniqueMatches = matches.Distinct().ToList();
@@ -156,9 +163,8 @@ public class GemManager : MonoBehaviour
             yield break;
         }
         DestroyGems(uniqueMatches);
-
-        if (gemList.Any(gem => gem == null)) Debug.Log("nulls are there after finding matches");
     }
+
 
     private void DestroyGems(List<GameObject> uniqueMatches)
     {
@@ -170,10 +176,13 @@ public class GemManager : MonoBehaviour
         }
     }
 
-    IEnumerator DropGems(GameObject[] currentPair)
+
+    IEnumerator DropGems(List<GameObject> currentPair)
     {
-        if (gemList.Any(gem => gem == null)) Debug.Log("nulls are there before finding matches");
-        yield return StartCoroutine(FindMatches(currentPair));
+        if(currentPair.Count == 2)
+        {
+            yield return StartCoroutine(FindMatches(currentPair));
+        }
         List<GameObject> gemsToDrop = new List<GameObject>();
         // Iterate through all gems in the gemList
         while (gemList.Any(gem => gem == null))
@@ -223,11 +232,21 @@ public class GemManager : MonoBehaviour
                     gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity) as GameObject;
                     gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos.x = column;
                     gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos.y = FieldParams.rows - 1;
-                    Debug.Log("we have an empty top!");
                 }
             }
         }
-        state = GameState.None;
+        currentPair.Clear();
+        List<GameObject> matchesAfterPair = new List<GameObject>();
+        matchesAfterPair.AddRange(gemList.FindMatches());
+        if (matchesAfterPair.Count > 0 )
+        {
+            DestroyGems(matchesAfterPair);
+            matchesAfterPair.Clear();
+            StartCoroutine(DropGems(currentPair));
+        }
+        else state = GameState.None;
+
+
     }
 
 }
