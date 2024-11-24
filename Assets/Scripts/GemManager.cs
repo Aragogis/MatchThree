@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
@@ -14,7 +15,6 @@ public class GemManager : MonoBehaviour
     private GameObject gemHit;
     private GemList gemList;
     private List<GameObject> currentPair = new List<GameObject>();
-
 
     internal GameObject GetNewGem()
     {
@@ -108,12 +108,6 @@ public class GemManager : MonoBehaviour
                         currentPair.Add(hit.collider.gameObject);
 
                         StartCoroutine(DropGems(currentPair));
-
-                        //check triples and >, return list of gems
-
-
-                        //destroy matches
-                        //spawn new gems
                         //count points
 
 
@@ -183,7 +177,7 @@ public class GemManager : MonoBehaviour
         {
             yield return StartCoroutine(FindMatches(currentPair));
         }
-        List<GameObject> gemsToDrop = new List<GameObject>();
+        List<Coroutine> dropTasks = new List<Coroutine>();
         // Iterate through all gems in the gemList
         while (gemList.Any(gem => gem == null))
         {
@@ -198,32 +192,17 @@ public class GemManager : MonoBehaviour
                         if (gemList[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y - 1] == null)
                         {
                             // If the space is empty, start dropping the gem
-                            gemsToDrop.Add(gem);
+                            dropTasks.Add(StartCoroutine(DropGem(gem)));
                         }
                     }
                 }
             }
-            foreach (var gem in gemsToDrop)
+            foreach (var task in dropTasks)
             {
-                Vector3 startPos = gem.GetComponent<Gem>().pos;
-                Vector3 endPos = new Vector3(startPos.x, startPos.y - 1);
-                float t = 0;
-
-                while (t < 1f)
-                {
-                    t += Time.deltaTime * FieldParams.swapDuration*4;
-
-                    gem.transform.position = Vector3.Lerp(startPos, endPos, t);
-
-                    yield return null;
-                }
-
-                gem.transform.position = endPos;
-                gem.GetComponent<Gem>().UpdatePos();
-                gemList[(int)startPos.x, (int)startPos.y] = null;
+                yield return task;
             }
 
-            gemsToDrop.Clear();
+            dropTasks.Clear();
             for (int column = 0; column < FieldParams.cols; column++)
             {
                 if (gemList[column, FieldParams.rows - 1] == null)
@@ -249,6 +228,26 @@ public class GemManager : MonoBehaviour
 
     }
 
+
+    IEnumerator DropGem(GameObject gem)
+    {
+        Vector3 startPos = gem.GetComponent<Gem>().pos;
+        Vector3 endPos = new Vector3(startPos.x, startPos.y - 1);
+        float t = 0;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime * FieldParams.swapDuration * 6;
+
+            gem.transform.position = Vector3.Lerp(startPos, endPos, t);
+
+            yield return null;
+        }
+
+        gem.transform.position = endPos;
+        gem.GetComponent<Gem>().UpdatePos();
+        gemList[(int)startPos.x, (int)startPos.y] = null;
+    }
 }
 
 
