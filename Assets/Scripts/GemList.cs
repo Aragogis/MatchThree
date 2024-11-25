@@ -62,6 +62,19 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
             }
         }
     }
+
+    public int bombCount
+    {
+        get
+        {
+            int bombCount = 0;
+            foreach (var gem in this)
+            {
+                if (gem != null && gem.GetComponent<Gem>().type == GemType.Bomb) bombCount++;
+            }
+            return bombCount;
+        }
+    }
     public List<GameObject> FindMatches(Gem gem)
     {
         // Find consecutive matches in the current row
@@ -86,6 +99,36 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
         return rowMatches.Concat(colMatches).ToList();
     }
 
+    public List<GameObject> FindBombMatches()
+    {
+        List<GameObject> bombs = new List<GameObject>();
+        List<GameObject> bombMatches = new List<GameObject>();
+
+        foreach(var gem in this)
+        {
+            if(gem.GetComponent<Gem>().type == GemType.Bomb) bombs.Add(gem);
+        }
+
+        foreach(var gem in bombs)
+        {
+            var neighbours = this.GetNeighbours(gem.GetComponent<Gem>());
+
+            if (neighbours[0] != null && neighbours[1] != null)
+            {
+                if(neighbours[0].GetComponent<Gem>().type == neighbours[1].GetComponent<Gem>().type) 
+                    bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+            }
+            if(neighbours[2] != null && neighbours[3] != null)
+            {
+                if (neighbours[2].GetComponent<Gem>().type == neighbours[3].GetComponent<Gem>().type)
+                    bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+            }
+
+        }
+
+        return bombMatches;
+    }
+
     public List<GameObject> FindMatches()
     {
         List<GameObject> matches = new List<GameObject>();
@@ -98,5 +141,57 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    private List<GameObject> FindExplodePattern(Gem gem)
+    {
+        List<GameObject> gemsToDestroy = new List<GameObject>
+        {
+            gem.gameObject
+        };
+        for(int i = 1; i <= FieldParams.explodeRadius; i++)
+        {
+            if((int)gem.pos.x + i < FieldParams.cols) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x + i][(int)gem.pos.y]);
+            if((int)gem.pos.x - i >= 0) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x - i][(int)gem.pos.y]);
+
+            if((int)gem.pos.y + i < FieldParams.rows) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x][(int)gem.pos.y + i]);
+            if((int)gem.pos.y - i >= 0) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x][(int)gem.pos.y - i]);
+
+            if((int)gem.pos.x + i < FieldParams.cols && (int)gem.pos.y + i < FieldParams.rows) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x + i][(int)gem.pos.y + i]);
+            if((int)gem.pos.x - i >= 0 && (int)gem.pos.y - i >= 0) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x - i][(int)gem.pos.y - i]);
+
+            if((int)gem.pos.x - i >= 0 && (int)gem.pos.y + i < FieldParams.rows) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x - i][(int)gem.pos.y + i]);
+            if((int)gem.pos.x + i < FieldParams.cols && (int)gem.pos.y - i >= 0) 
+                gemsToDestroy.Add(this.gemList[(int)gem.pos.x + i][(int)gem.pos.y - i]);
+        }
+        return gemsToDestroy;
+    }
+
+    public List<GameObject> GetNeighbours(Gem gem)
+    {
+        List<GameObject> neighbours = new List<GameObject>();
+
+        Vector3 gemPos = gem.GetComponent<Gem>().pos;
+        if (gemPos.y + 1 < FieldParams.rows)
+            neighbours.Add(this[(int)gemPos.x, (int)gemPos.y + 1]);
+        else neighbours.Add(null);
+        if (gemPos.y - 1 >= 0) 
+            neighbours.Add(this[(int)gemPos.x, (int)gemPos.y - 1]);
+        else neighbours.Add(null);
+        if (gemPos.x + 1 < FieldParams.cols)
+            neighbours.Add(this[(int)gemPos.x + 1, (int)gemPos.y]);
+        else neighbours.Add(null);
+        if (gemPos.x - 1 >= 0)
+            neighbours.Add(this[(int)gemPos.x - 1, (int)gemPos.y]);
+        else neighbours.Add(null);
+
+        return neighbours;
     }
 }

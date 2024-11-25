@@ -25,7 +25,7 @@ public class GemManager : MonoBehaviour
     internal GameObject GetNewGem(GameObject prevGem)
     {
         GameObject gem = GetNewGem();
-        while (gem.GetComponent<Gem>().type == prevGem.GetComponent<Gem>().type)
+        while (Utilities.AreSameType(gem.GetComponent<Gem>(), prevGem.GetComponent<Gem>()))
         {
             gem = GetNewGem();
         }
@@ -58,11 +58,14 @@ public class GemManager : MonoBehaviour
                 {
                     newGem = GetNewGem(newGem);
                 }
+                if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<Gem>().type == GemType.Bomb)
+                {
+                    newGem = GetNewGem(newGem);
+                }
                 float xPos = gemSpawnAnchor.position.x + i;
                 float yPos = gemSpawnAnchor.position.y + j;
                 gemList[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos, yPos), Quaternion.identity) as GameObject;
-                gemList[i, j].GetComponent<Gem>().pos.x = i;
-                gemList[i, j].GetComponent<Gem>().pos.y = j;
+                gemList[i, j].GetComponent<Gem>().pos = new Vector3(i, j);
 
             }
         }
@@ -149,6 +152,7 @@ public class GemManager : MonoBehaviour
         List<GameObject> matches;
         matches = gemList.FindMatches(currentPair[0].GetComponent<Gem>());
         matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<Gem>()));
+        matches.AddRange(gemList.FindBombMatches());
         var uniqueMatches = matches.Distinct().ToList();
 
         if (uniqueMatches.Count < 3)
@@ -156,14 +160,21 @@ public class GemManager : MonoBehaviour
             yield return StartCoroutine(AnimateSwap(currentPair));
             yield break;
         }
+
         DestroyGems(uniqueMatches);
     }
 
 
     private void DestroyGems(List<GameObject> uniqueMatches)
     {
+        List<GameObject> tempGemsToDestroy = new List<GameObject>();
+
+        uniqueMatches.AddRange(tempGemsToDestroy);
+        uniqueMatches = uniqueMatches.Distinct().ToList();
+
         foreach (var gem in uniqueMatches)
         {
+
             var tempPos = gem.GetComponent<Gem>().pos;
             Destroy(gem.gameObject);
             gemList[(int)tempPos.x, (int)tempPos.y] = null;
@@ -208,15 +219,20 @@ public class GemManager : MonoBehaviour
                 if (gemList[column, FieldParams.rows - 1] == null)
                 {
                     GameObject newGem = GetNewGem();
+                    if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<Gem>().type == GemType.Bomb)
+                    {
+                        newGem = GetNewGem(newGem);
+                    }
                     gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity) as GameObject;
-                    gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos.x = column;
-                    gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos.y = FieldParams.rows - 1;
+                    gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos = new Vector3(column, FieldParams.rows - 1);
                 }
             }
         }
         currentPair.Clear();
         List<GameObject> matchesAfterPair = new List<GameObject>();
         matchesAfterPair.AddRange(gemList.FindMatches());
+        matchesAfterPair.AddRange(gemList.FindBombMatches());
+        matchesAfterPair = matchesAfterPair.Distinct().ToList();
         if (matchesAfterPair.Count > 0 )
         {
             DestroyGems(matchesAfterPair);
@@ -248,6 +264,7 @@ public class GemManager : MonoBehaviour
         gem.GetComponent<Gem>().UpdatePos();
         gemList[(int)startPos.x, (int)startPos.y] = null;
     }
+
 }
 
 

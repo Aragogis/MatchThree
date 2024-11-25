@@ -376,9 +376,11 @@ MonoBehaviour:
   gemSpawnAnchor: {fileID: 679287421}
   gemVariants:
   - {fileID: 1963814795179650238, guid: 172b0fb7d83fee849ba6cf2eaee3d96e, type: 3}
+  - {fileID: 1963814795179650238, guid: eb128519760d22141b47f568c19afdff, type: 3}
   - {fileID: 1627054086200314139, guid: 1c1d97360f9dad945aaf7003aa6d5cc0, type: 3}
   - {fileID: 5215004521899919654, guid: 0e0f0797261ccca4c9b6c3c2770a1645, type: 3}
   - {fileID: 2118817002730418259, guid: a1e034a2fb260e34899062c53cb02f30, type: 3}
+  - {fileID: 1963814795179650238, guid: 7ad92edee8da32240b02d9b9e6dc9a9d, type: 3}
 --- !u!4 &2002659116
 Transform:
   m_ObjectHideFlags: 0
