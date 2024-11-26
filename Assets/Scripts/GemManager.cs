@@ -15,6 +15,7 @@ public class GemManager : MonoBehaviour
     private GameObject gemHit;
     private GemList gemList;
     private List<GameObject> currentPair = new List<GameObject>();
+    int currentScore = 0;
 
     internal GameObject GetNewGem()
     {
