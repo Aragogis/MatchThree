@@ -115,13 +115,33 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
             if (neighbours[0] != null && neighbours[1] != null)
             {
-                if(neighbours[0].GetComponent<Gem>().type == neighbours[1].GetComponent<Gem>().type) 
-                    bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+                if(neighbours[0].GetComponent<Gem>().type == neighbours[1].GetComponent<Gem>().type)
+                {
+                    if (neighbours[0].GetComponent<Gem>().type == GemType.Bomb)
+                    {
+                        bombMatches.AddRange(this);
+                    }
+                    else
+                    {
+                        bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+                    }
+                }
+
             }
             if(neighbours[2] != null && neighbours[3] != null)
             {
                 if (neighbours[2].GetComponent<Gem>().type == neighbours[3].GetComponent<Gem>().type)
-                    bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+                {
+                    if (neighbours[2].GetComponent<Gem>().type == GemType.Bomb)
+                    {
+                        bombMatches.AddRange(this);
+                    }
+                    else
+                    {
+                        bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+                    }
+                }
+
             }
 
         }
