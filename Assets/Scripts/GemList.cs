@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.Tilemaps;
 using UnityEngine;
 public class GemList : MonoBehaviour, IEnumerable<GameObject>
 {
@@ -213,5 +212,46 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
         else neighbours.Add(null);
 
         return neighbours;
+    }
+
+    public bool CheckGameOver() // todo include special gems check
+    {
+        var gems = gemList.SelectMany(row => row)
+                  .Where(gem => gem != null)
+                  .ToList();
+        foreach (GameObject gem in gems)
+        {
+            List<GameObject> neighbours = GetNeighbours(gem.GetComponent<Gem>());
+            foreach (GameObject neighbour in neighbours)
+            {
+                if (neighbour == null) continue;
+                Vector3 gemPos = gem.GetComponent<Gem>().pos;
+                Vector3 neighbourPos = neighbour.GetComponent<Gem>().pos;
+
+                this[(int)gemPos.x, (int)gemPos.y] = neighbour;
+                this[(int)neighbourPos.x, (int)neighbourPos.y] = gem;
+                
+                gem.GetComponent<Gem>().pos = neighbourPos;
+                neighbour.GetComponent<Gem>().pos = gemPos;
+
+                if (FindMatches(neighbour.GetComponent<Gem>()).Count >= 3 || FindMatches(gem.GetComponent<Gem>()).Count >= 3)
+                {
+                    this[(int)gemPos.x, (int)gemPos.y] = gem;
+                    this[(int)neighbourPos.x, (int)neighbourPos.y] = neighbour;
+
+                    gem.GetComponent<Gem>().pos = gemPos;
+                    neighbour.GetComponent<Gem>().pos = neighbourPos;
+
+                    return false;
+                }
+
+                this[(int)gemPos.x, (int)gemPos.y] = gem;
+                this[(int)neighbourPos.x, (int)neighbourPos.y] = neighbour;
+
+                gem.GetComponent<Gem>().pos = gemPos;
+                neighbour.GetComponent<Gem>().pos = neighbourPos;
+            }
+        }
+        return true;
     }
 }

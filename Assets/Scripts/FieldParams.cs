@@ -15,8 +15,8 @@ public enum GameState
 }
 public class FieldParams
 {
-    public static int cols = 8;
-    public static int rows = 12;
+    public static int cols = 4;
+    public static int rows = 6;
     public static float swapDuration = 2.5f;
     public static int explodeRadius = 2;
     public static int maxBombs = 3;

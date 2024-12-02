@@ -1,9 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Unity.Jobs;
 using UnityEngine;
-using UnityEngine.UIElements;
 using Random = UnityEngine.Random;
 
 public class GemManager : MonoBehaviour
@@ -112,8 +110,6 @@ public class GemManager : MonoBehaviour
                         currentPair.Add(hit.collider.gameObject);
 
                         StartCoroutine(DropGems(currentPair));
-                        //count points
-
 
                     }
                 }
@@ -240,7 +236,12 @@ public class GemManager : MonoBehaviour
             matchesAfterPair.Clear();
             StartCoroutine(DropGems(currentPair));
         }
-        else state = GameState.None;
+        else
+        {
+            state = GameState.None;
+            yield return gemList.CheckGameOver(); // gameover sequence;
+        }
+
 
 
     }

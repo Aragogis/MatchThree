@@ -1,7 +1,5 @@
-using System.Collections.Generic;
-using UnityEngine;
 
-public class Utilities : MonoBehaviour
+public class Utilities
 {
 
     internal static bool AreNeighbours(Gem gemHit, Gem gemHit2)
@@ -15,15 +13,4 @@ public class Utilities : MonoBehaviour
         return firstGem.type == secondGem.type;
     }
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }
