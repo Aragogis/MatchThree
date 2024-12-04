@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 7320135833272740413}
   - component: {fileID: 350618796893421025}
-  - component: {fileID: 9218649075756834879}
   - component: {fileID: -6204700065077279933}
   - component: {fileID: -3449071257732738378}
+  - component: {fileID: 1045129107755230587}
   m_Layer: 0
   m_Name: gem_green
   m_TagString: Untagged
@@ -87,20 +87,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &9218649075756834879
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1627054086200314139}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d4457709c028c747b2cb9e2b7afd1f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  type: 2
-  pos: {x: 0, y: 0, z: 0}
 --- !u!50 &-6204700065077279933
 Rigidbody2D:
   serializedVersion: 4
@@ -138,3 +124,18 @@ CircleCollider2D:
   m_Offset: {x: 0, y: 0}
   serializedVersion: 2
   m_Radius: 1.5
+--- !u!114 &1045129107755230587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1627054086200314139}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d948406761f8374ba4f9a9fd30167ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  type: 2
+  gemList: {fileID: 0}
+  pos: {x: 0, y: 0, z: 0}

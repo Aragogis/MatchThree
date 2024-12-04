@@ -69,16 +69,16 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
             int bombCount = 0;
             foreach (var gem in this)
             {
-                if (gem != null && gem.GetComponent<Gem>().type == GemType.Bomb) bombCount++;
+                if (gem != null && gem.GetComponent<DefaultGem>().type == GemType.Bomb) bombCount++;
             }
             return bombCount;
         }
     }
-    public List<GameObject> FindMatches(Gem gem)
+    public List<GameObject> FindMatches(DefaultGem gem)
     {
         // Find consecutive matches in the current row
         var rowMatches = Enumerable.Range(0, this.gemList[(int)gem.pos.x].Count)
-            .Where(col => this.gemList[(int)gem.pos.x][col].GetComponent<Gem>().type == gem.type) // Filter by gem type
+            .Where(col => this.gemList[(int)gem.pos.x][col].GetComponent<DefaultGem>().type == gem.type) // Filter by gem type
             .Select((col, index) => new { col, index })
             .GroupBy(x => x.index - x.col) // Group by consecutive indexes
             .Where(g => g.Count() >= 3) // Only consider groups with 3 or more consecutive elements
@@ -87,7 +87,7 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
         // Find consecutive matches in the current column
         var colMatches = Enumerable.Range(0, this.gemList.Count)
-            .Where(row => this.gemList[row][(int)gem.pos.y].GetComponent<Gem>().type == gem.type) // Filter by gem type
+            .Where(row => this.gemList[row][(int)gem.pos.y].GetComponent<DefaultGem>().type == gem.type) // Filter by gem type
             .Select((row, index) => new { row, index })
             .GroupBy(x => x.index - x.row) // Group by consecutive indexes
             .Where(g => g.Count() >= 3) // Only consider groups with 3 or more consecutive elements
@@ -105,39 +105,39 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
         foreach(var gem in this)
         {
-            if(gem.GetComponent<Gem>().type == GemType.Bomb) bombs.Add(gem);
+            if(gem.GetComponent<DefaultGem>().type == GemType.Bomb) bombs.Add(gem);
         }
 
         foreach(var gem in bombs)
         {
-            var neighbours = this.GetNeighbours(gem.GetComponent<Gem>());
+            var neighbours = gem.GetComponent<DefaultGem>().GetNeighbours();
 
             if (neighbours[0] != null && neighbours[1] != null)
             {
-                if(neighbours[0].GetComponent<Gem>().type == neighbours[1].GetComponent<Gem>().type)
+                if(neighbours[0].GetComponent<DefaultGem>().type == neighbours[1].GetComponent<DefaultGem>().type)
                 {
-                    if (neighbours[0].GetComponent<Gem>().type == GemType.Bomb)
+                    if (neighbours[0].GetComponent<DefaultGem>().type == GemType.Bomb)
                     {
                         bombMatches.AddRange(this);
                     }
                     else
                     {
-                        bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+                        bombMatches.AddRange(gem.GetComponent<Bomb>().GetDestrPattern());
                     }
                 }
 
             }
             if(neighbours[2] != null && neighbours[3] != null)
             {
-                if (neighbours[2].GetComponent<Gem>().type == neighbours[3].GetComponent<Gem>().type)
+                if (neighbours[2].GetComponent<DefaultGem>().type == neighbours[3].GetComponent<DefaultGem>().type)
                 {
-                    if (neighbours[2].GetComponent<Gem>().type == GemType.Bomb)
+                    if (neighbours[2].GetComponent<DefaultGem>().type == GemType.Bomb)
                     {
                         bombMatches.AddRange(this);
                     }
                     else
                     {
-                        bombMatches.AddRange(this.FindExplodePattern(gem.GetComponent<Gem>()));
+                        bombMatches.AddRange(gem.GetComponent<Bomb>().GetDestrPattern());
                     }
                 }
 
@@ -153,7 +153,7 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
         List<GameObject> matches = new List<GameObject>();
         foreach(var gem in this)
         {
-            matches.AddRange(FindMatches(gem.GetComponent<Gem>()));
+            matches.AddRange(FindMatches(gem.GetComponent<DefaultGem>()));
         }
         return matches.Distinct().ToList();
     }
@@ -162,57 +162,9 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
         return GetEnumerator();
     }
 
-    private List<GameObject> FindExplodePattern(Gem gem)
-    {
-        List<GameObject> gemsToDestroy = new List<GameObject>
-        {
-            gem.gameObject
-        };
-        for(int i = 1; i <= FieldParams.explodeRadius; i++)
-        {
-            if((int)gem.pos.x + i < FieldParams.cols) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x + i][(int)gem.pos.y]);
-            if((int)gem.pos.x - i >= 0) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x - i][(int)gem.pos.y]);
 
-            if((int)gem.pos.y + i < FieldParams.rows) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x][(int)gem.pos.y + i]);
-            if((int)gem.pos.y - i >= 0) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x][(int)gem.pos.y - i]);
 
-            if((int)gem.pos.x + i < FieldParams.cols && (int)gem.pos.y + i < FieldParams.rows) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x + i][(int)gem.pos.y + i]);
-            if((int)gem.pos.x - i >= 0 && (int)gem.pos.y - i >= 0) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x - i][(int)gem.pos.y - i]);
 
-            if((int)gem.pos.x - i >= 0 && (int)gem.pos.y + i < FieldParams.rows) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x - i][(int)gem.pos.y + i]);
-            if((int)gem.pos.x + i < FieldParams.cols && (int)gem.pos.y - i >= 0) 
-                gemsToDestroy.Add(this.gemList[(int)gem.pos.x + i][(int)gem.pos.y - i]);
-        }
-        return gemsToDestroy;
-    }
-
-    public List<GameObject> GetNeighbours(Gem gem)
-    {
-        List<GameObject> neighbours = new List<GameObject>();
-
-        Vector3 gemPos = gem.GetComponent<Gem>().pos;
-        if (gemPos.y + 1 < FieldParams.rows)
-            neighbours.Add(this[(int)gemPos.x, (int)gemPos.y + 1]);
-        else neighbours.Add(null);
-        if (gemPos.y - 1 >= 0) 
-            neighbours.Add(this[(int)gemPos.x, (int)gemPos.y - 1]);
-        else neighbours.Add(null);
-        if (gemPos.x + 1 < FieldParams.cols)
-            neighbours.Add(this[(int)gemPos.x + 1, (int)gemPos.y]);
-        else neighbours.Add(null);
-        if (gemPos.x - 1 >= 0)
-            neighbours.Add(this[(int)gemPos.x - 1, (int)gemPos.y]);
-        else neighbours.Add(null);
-
-        return neighbours;
-    }
 
     public bool CheckGameOver() // todo include special gems check
     {
@@ -221,26 +173,26 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
                   .ToList();
         foreach (GameObject gem in gems)
         {
-            List<GameObject> neighbours = GetNeighbours(gem.GetComponent<Gem>());
+            List<GameObject> neighbours = gem.GetComponent<DefaultGem>().GetNeighbours();
             foreach (GameObject neighbour in neighbours)
             {
                 if (neighbour == null) continue;
-                Vector3 gemPos = gem.GetComponent<Gem>().pos;
-                Vector3 neighbourPos = neighbour.GetComponent<Gem>().pos;
+                Vector3 gemPos = gem.GetComponent<DefaultGem>().pos;
+                Vector3 neighbourPos = neighbour.GetComponent<DefaultGem>().pos;
 
                 this[(int)gemPos.x, (int)gemPos.y] = neighbour;
                 this[(int)neighbourPos.x, (int)neighbourPos.y] = gem;
                 
-                gem.GetComponent<Gem>().pos = neighbourPos;
-                neighbour.GetComponent<Gem>().pos = gemPos;
+                gem.GetComponent<DefaultGem>().pos = neighbourPos;
+                neighbour.GetComponent<DefaultGem>().pos = gemPos;
 
-                if (FindMatches(neighbour.GetComponent<Gem>()).Count >= 3 || FindMatches(gem.GetComponent<Gem>()).Count >= 3)
+                if (FindMatches(neighbour.GetComponent<DefaultGem>()).Count >= 3 || FindMatches(gem.GetComponent<DefaultGem>()).Count >= 3)
                 {
                     this[(int)gemPos.x, (int)gemPos.y] = gem;
                     this[(int)neighbourPos.x, (int)neighbourPos.y] = neighbour;
 
-                    gem.GetComponent<Gem>().pos = gemPos;
-                    neighbour.GetComponent<Gem>().pos = neighbourPos;
+                    gem.GetComponent<DefaultGem>().pos = gemPos;
+                    neighbour.GetComponent<DefaultGem>().pos = neighbourPos;
 
                     return false;
                 }
@@ -248,8 +200,8 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
                 this[(int)gemPos.x, (int)gemPos.y] = gem;
                 this[(int)neighbourPos.x, (int)neighbourPos.y] = neighbour;
 
-                gem.GetComponent<Gem>().pos = gemPos;
-                neighbour.GetComponent<Gem>().pos = neighbourPos;
+                gem.GetComponent<DefaultGem>().pos = gemPos;
+                neighbour.GetComponent<DefaultGem>().pos = neighbourPos;
             }
         }
         return true;

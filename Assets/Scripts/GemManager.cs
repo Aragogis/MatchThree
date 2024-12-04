@@ -24,7 +24,7 @@ public class GemManager : MonoBehaviour
     internal GameObject GetNewGem(GameObject prevGem)
     {
         GameObject gem = GetNewGem();
-        while (Utilities.AreSameType(gem.GetComponent<Gem>(), prevGem.GetComponent<Gem>()))
+        while (Utilities.AreSameType(gem.GetComponent<DefaultGem>(), prevGem.GetComponent<DefaultGem>()))
         {
             gem = GetNewGem();
         }
@@ -49,22 +49,22 @@ public class GemManager : MonoBehaviour
             for (int j = 0; j < FieldParams.rows; j++)
             {
                 GameObject newGem = GetNewGem();
-                if (i - 1 > 0 && gemList[i - 1, j].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
+                if (i - 1 > 0 && gemList[i - 1, j].GetComponent<DefaultGem>().type == newGem.GetComponent<DefaultGem>().type)
                 {
                     newGem = GetNewGem(newGem);
                 }
-                if (j - 1 > 0 && gemList[i, j - 1].GetComponent<Gem>().type == newGem.GetComponent<Gem>().type)
+                if (j - 1 > 0 && gemList[i, j - 1].GetComponent<DefaultGem>().type == newGem.GetComponent<DefaultGem>().type)
                 {
                     newGem = GetNewGem(newGem);
                 }
-                if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<Gem>().type == GemType.Bomb)
+                if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<DefaultGem>().type == GemType.Bomb)
                 {
                     newGem = GetNewGem(newGem);
                 }
                 float xPos = gemSpawnAnchor.position.x + i;
                 float yPos = gemSpawnAnchor.position.y + j;
-                gemList[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos, yPos), Quaternion.identity) as GameObject;
-                gemList[i, j].GetComponent<Gem>().pos = new Vector3(i, j);
+                gemList[i, j] = Instantiate<GameObject>(newGem, new Vector3(xPos, yPos), Quaternion.identity, this.gameObject.transform) as GameObject;
+                gemList[i, j].GetComponent<DefaultGem>().pos = new Vector3(i, j);
 
             }
         }
@@ -98,7 +98,7 @@ public class GemManager : MonoBehaviour
                 var hit = Physics2D.Raycast(Camera.main.ScreenToWorldPoint(Input.mousePosition), Vector2.zero);
                 if (hit.collider != null & gemHit != null & hit.collider.gameObject != gemHit)
                 {
-                    if (!Utilities.AreNeighbours(gemHit.gameObject.GetComponent<Gem>(), hit.collider.gameObject.GetComponent<Gem>()))
+                    if (!Utilities.AreNeighbours(gemHit.gameObject.GetComponent<DefaultGem>(), hit.collider.gameObject.GetComponent<DefaultGem>()))
                     {
                         state = GameState.None;
                     }
@@ -120,8 +120,8 @@ public class GemManager : MonoBehaviour
 
     IEnumerator AnimateSwap(List<GameObject> currentPair)
     {
-        Vector3 startPosFirst = currentPair[0].GetComponent<Gem>().pos;
-        Vector3 startPosSecond = currentPair[1].GetComponent<Gem>().pos;
+        Vector3 startPosFirst = currentPair[0].GetComponent<DefaultGem>().pos;
+        Vector3 startPosSecond = currentPair[1].GetComponent<DefaultGem>().pos;
 
         float t = 0;
 
@@ -138,8 +138,8 @@ public class GemManager : MonoBehaviour
         currentPair[0].transform.position = startPosSecond;
         currentPair[1].transform.position = startPosFirst;
 
-        currentPair[0].GetComponent<Gem>().UpdatePos();
-        currentPair[1].GetComponent<Gem>().UpdatePos();
+        currentPair[0].GetComponent<DefaultGem>().UpdatePos();
+        currentPair[1].GetComponent<DefaultGem>().UpdatePos();
     }
 
 
@@ -147,8 +147,8 @@ public class GemManager : MonoBehaviour
     {
         yield return StartCoroutine(AnimateSwap(currentPair));
         List<GameObject> matches;
-        matches = gemList.FindMatches(currentPair[0].GetComponent<Gem>());
-        matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<Gem>()));
+        matches = gemList.FindMatches(currentPair[0].GetComponent<DefaultGem>());
+        matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<DefaultGem>()));
         matches.AddRange(gemList.FindBombMatches());
         var uniqueMatches = matches.Distinct().ToList();
 
@@ -172,7 +172,7 @@ public class GemManager : MonoBehaviour
         foreach (var gem in uniqueMatches)
         {
 
-            var tempPos = gem.GetComponent<Gem>().pos;
+            var tempPos = gem.GetComponent<DefaultGem>().pos;
             Destroy(gem.gameObject);
             gemList[(int)tempPos.x, (int)tempPos.y] = null;
         }
@@ -194,10 +194,10 @@ public class GemManager : MonoBehaviour
                 if (gem != null)
                 {
                     // Check if the position below the gem is within bounds and null
-                    if (gem.GetComponent<Gem>().pos.y - 1 >= 0) // Check if we're not at the bottom row
+                    if (gem.GetComponent<DefaultGem>().pos.y - 1 >= 0) // Check if we're not at the bottom row
                     {
                         // Check if the space below the gem is empty (null)
-                        if (gemList[(int)gem.GetComponent<Gem>().pos.x, (int)gem.GetComponent<Gem>().pos.y - 1] == null)
+                        if (gemList[(int)gem.GetComponent<DefaultGem>().pos.x, (int)gem.GetComponent<DefaultGem>().pos.y - 1] == null)
                         {
                             // If the space is empty, start dropping the gem
                             dropTasks.Add(StartCoroutine(DropGem(gem)));
@@ -216,12 +216,12 @@ public class GemManager : MonoBehaviour
                 if (gemList[column, FieldParams.rows - 1] == null)
                 {
                     GameObject newGem = GetNewGem();
-                    if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<Gem>().type == GemType.Bomb)
+                    if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<DefaultGem>().type == GemType.Bomb)
                     {
                         newGem = GetNewGem(newGem);
                     }
-                    gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity) as GameObject;
-                    gemList[column, FieldParams.rows - 1].GetComponent<Gem>().pos = new Vector3(column, FieldParams.rows - 1);
+                    gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity, this.gameObject.transform) as GameObject;
+                    gemList[column, FieldParams.rows - 1].GetComponent<DefaultGem>().pos = new Vector3(column, FieldParams.rows - 1);
                 }
             }
         }
@@ -249,7 +249,7 @@ public class GemManager : MonoBehaviour
 
     IEnumerator DropGem(GameObject gem)
     {
-        Vector3 startPos = gem.GetComponent<Gem>().pos;
+        Vector3 startPos = gem.GetComponent<DefaultGem>().pos;
         Vector3 endPos = new Vector3(startPos.x, startPos.y - 1);
         float t = 0;
 
@@ -263,7 +263,7 @@ public class GemManager : MonoBehaviour
         }
 
         gem.transform.position = endPos;
-        gem.GetComponent<Gem>().UpdatePos();
+        gem.GetComponent<DefaultGem>().UpdatePos();
         gemList[(int)startPos.x, (int)startPos.y] = null;
     }
 
