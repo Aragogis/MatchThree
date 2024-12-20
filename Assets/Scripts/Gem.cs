@@ -4,9 +4,9 @@ using UnityEngine;
 
 public class Gem : DefaultGem
 {
-    public override List<GameObject> GetDestrPattern()
+    public override HashSet<GameObject> GetDestrPattern()
     {
-        return new List<GameObject>()
+        return new HashSet<GameObject>()
         {
             this.gameObject
         };

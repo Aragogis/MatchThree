@@ -13,26 +13,30 @@ public abstract class DefaultGem : MonoBehaviour
     public void UpdatePos()
     {
         this.pos = this.transform.position;
-        gemList[(int)pos.x, (int)pos.y] = this.gameObject;
+        gemList[pos.x, pos.y] = this.gameObject;
     }
-    public abstract List<GameObject> GetDestrPattern();
-    public List<GameObject> GetNeighbours()
+    public abstract HashSet<GameObject> GetDestrPattern();
+    public GameObject[][] GetNeighbours()
     {
-        List<GameObject> neighbours = new List<GameObject>();
+        GameObject[][] neighbours = new GameObject[2][];
+        neighbours[0] = new GameObject[2];
+        neighbours[1] = new GameObject[2];
 
         Vector3 gemPos = this.pos;
         if (gemPos.y + 1 < FieldParams.rows)
-            neighbours.Add(gemList[(int)gemPos.x, (int)gemPos.y + 1]);
-        else neighbours.Add(null);
+            neighbours[0][0] = gemList[gemPos.x, gemPos.y + 1];
+        else neighbours[0][0] = null;
         if (gemPos.y - 1 >= 0)
-            neighbours.Add(gemList[(int)gemPos.x, (int)gemPos.y - 1]);
-        else neighbours.Add(null);
+            neighbours[0][1] = gemList[gemPos.x, gemPos.y - 1];
+        else neighbours[0][1] = null;
+
+
         if (gemPos.x + 1 < FieldParams.cols)
-            neighbours.Add(gemList[(int)gemPos.x + 1, (int)gemPos.y]);
-        else neighbours.Add(null);
+            neighbours[1][0] = gemList[gemPos.x + 1, gemPos.y];
+        else neighbours[1][0] = null;
         if (gemPos.x - 1 >= 0)
-            neighbours.Add(gemList[(int)gemPos.x - 1, (int)gemPos.y]);
-        else neighbours.Add(null);
+            neighbours[1][1] = gemList[gemPos.x - 1, gemPos.y];
+        else neighbours[1][1] = null;
 
         return neighbours;
     }

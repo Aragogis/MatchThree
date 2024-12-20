@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -36,6 +37,7 @@ public class GemManager : MonoBehaviour
     {
         gemList = FindObjectOfType<GemList>();
         InitializeGameField();
+        StartCoroutine(MatchController());
     }
 
 
@@ -68,6 +70,8 @@ public class GemManager : MonoBehaviour
 
             }
         }
+
+
 
     }
 
@@ -104,12 +108,11 @@ public class GemManager : MonoBehaviour
                     }
                     else
                     {
-                        state = GameState.Animating;
 
                         currentPair.Add(gemHit);
                         currentPair.Add(hit.collider.gameObject);
 
-                        StartCoroutine(DropGems(currentPair));
+                        StartCoroutine(MatchController());
 
                     }
                 }
@@ -117,6 +120,38 @@ public class GemManager : MonoBehaviour
         }
     }
 
+    IEnumerator MatchController()
+    {
+        state = GameState.Animating;
+        if (currentPair.Count == 2)
+        {
+            yield return StartCoroutine(AnimateSwap(currentPair));
+        }
+
+        var matches = gemList.FindMatches();
+        matches.AddRange(gemList.FindBombMatches());
+        if (matches.Count < 3)
+        {
+            if (currentPair.Count == 2)
+            {
+                yield return StartCoroutine(AnimateSwap(currentPair));
+            }
+        }
+        else
+        {
+            while (matches.Count > 0)
+            {
+                DestroyGems(matches);
+                yield return StartCoroutine(DropGems());
+                matches.Clear();
+                matches.AddRange(gemList.FindMatches());
+                matches.AddRange(gemList.FindBombMatches());
+            }
+        }
+
+        currentPair.Clear();
+        state = GameState.None;
+    }
 
     IEnumerator AnimateSwap(List<GameObject> currentPair)
     {
@@ -143,48 +178,23 @@ public class GemManager : MonoBehaviour
     }
 
 
-    IEnumerator FindMatches(List<GameObject> currentPair)
+    private void DestroyGems(HashSet<GameObject> uniqueMatches)
     {
-        yield return StartCoroutine(AnimateSwap(currentPair));
-        List<GameObject> matches;
-        matches = gemList.FindMatches(currentPair[0].GetComponent<DefaultGem>());
-        matches.AddRange(gemList.FindMatches(currentPair[1].GetComponent<DefaultGem>()));
-        matches.AddRange(gemList.FindBombMatches());
-        var uniqueMatches = matches.Distinct().ToList();
-
-        if (uniqueMatches.Count < 3)
-        {
-            yield return StartCoroutine(AnimateSwap(currentPair));
-            yield break;
-        }
-
-        DestroyGems(uniqueMatches);
-    }
-
-
-    private void DestroyGems(List<GameObject> uniqueMatches)
-    {
-        List<GameObject> tempGemsToDestroy = new List<GameObject>();
-
-        uniqueMatches.AddRange(tempGemsToDestroy);
-        uniqueMatches = uniqueMatches.Distinct().ToList();
 
         foreach (var gem in uniqueMatches)
         {
 
             var tempPos = gem.GetComponent<DefaultGem>().pos;
+            //gem.GetComponent<SpriteRenderer>().color = Color.black;
             Destroy(gem.gameObject);
-            gemList[(int)tempPos.x, (int)tempPos.y] = null;
+            gemList[tempPos.x, tempPos.y] = null;
         }
     }
 
 
-    IEnumerator DropGems(List<GameObject> currentPair)
+    IEnumerator DropGems()
     {
-        if(currentPair.Count == 2)
-        {
-            yield return StartCoroutine(FindMatches(currentPair));
-        }
+
         List<Coroutine> dropTasks = new List<Coroutine>();
         // Iterate through all gems in the gemList
         while (gemList.Any(gem => gem == null))
@@ -197,7 +207,7 @@ public class GemManager : MonoBehaviour
                     if (gem.GetComponent<DefaultGem>().pos.y - 1 >= 0) // Check if we're not at the bottom row
                     {
                         // Check if the space below the gem is empty (null)
-                        if (gemList[(int)gem.GetComponent<DefaultGem>().pos.x, (int)gem.GetComponent<DefaultGem>().pos.y - 1] == null)
+                        if (gemList[gem.GetComponent<DefaultGem>().pos.x, gem.GetComponent<DefaultGem>().pos.y - 1] == null)
                         {
                             // If the space is empty, start dropping the gem
                             dropTasks.Add(StartCoroutine(DropGem(gem)));
@@ -211,41 +221,26 @@ public class GemManager : MonoBehaviour
             }
 
             dropTasks.Clear();
-            for (int column = 0; column < FieldParams.cols; column++)
-            {
-                if (gemList[column, FieldParams.rows - 1] == null)
-                {
-                    GameObject newGem = GetNewGem();
-                    if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<DefaultGem>().type == GemType.Bomb)
-                    {
-                        newGem = GetNewGem(newGem);
-                    }
-                    gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity, this.gameObject.transform) as GameObject;
-                    gemList[column, FieldParams.rows - 1].GetComponent<DefaultGem>().pos = new Vector3(column, FieldParams.rows - 1);
-                }
-            }
+            CreateNewGems();
         }
-        currentPair.Clear();
-        List<GameObject> matchesAfterPair = new List<GameObject>();
-        matchesAfterPair.AddRange(gemList.FindMatches());
-        matchesAfterPair.AddRange(gemList.FindBombMatches());
-        matchesAfterPair = matchesAfterPair.Distinct().ToList();
-        if (matchesAfterPair.Count > 0 )
-        {
-            DestroyGems(matchesAfterPair);
-            matchesAfterPair.Clear();
-            StartCoroutine(DropGems(currentPair));
-        }
-        else
-        {
-            state = GameState.None;
-            yield return gemList.CheckGameOver(); // gameover sequence;
-        }
-
-
-
     }
 
+    private void CreateNewGems()
+    {
+        for (int column = 0; column < FieldParams.cols; column++)
+        {
+            if (gemList[column, FieldParams.rows - 1] == null)
+            {
+                GameObject newGem = GetNewGem();
+                if (gemList.bombCount == FieldParams.maxBombs && newGem.GetComponent<DefaultGem>().type == GemType.Bomb)
+                {
+                    newGem = GetNewGem(newGem);
+                }
+                gemList[column, FieldParams.rows - 1] = Instantiate<GameObject>(newGem, new Vector3(column, FieldParams.rows - 1), Quaternion.identity, this.gameObject.transform) as GameObject;
+                gemList[column, FieldParams.rows - 1].GetComponent<DefaultGem>().pos = new Vector3(column, FieldParams.rows - 1);
+            }
+        }
+    }
 
     IEnumerator DropGem(GameObject gem)
     {
@@ -264,7 +259,7 @@ public class GemManager : MonoBehaviour
 
         gem.transform.position = endPos;
         gem.GetComponent<DefaultGem>().UpdatePos();
-        gemList[(int)startPos.x, (int)startPos.y] = null;
+        gemList[startPos.x, startPos.y] = null;
     }
 
 }
