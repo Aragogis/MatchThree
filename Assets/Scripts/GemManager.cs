@@ -130,12 +130,9 @@ public class GemManager : MonoBehaviour
 
         var matches = gemList.FindMatches();
         matches.AddRange(gemList.FindBombMatches());
-        if (matches.Count < 3)
+        if (matches.Count < 3 && currentPair.Count == 2)
         {
-            if (currentPair.Count == 2)
-            {
-                yield return StartCoroutine(AnimateSwap(currentPair));
-            }
+            yield return StartCoroutine(AnimateSwap(currentPair));
         }
         else
         {
