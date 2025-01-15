@@ -1,18 +1,18 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
-public class RowBomb : MonoBehaviour
+public class RowBomb : Bomb
 {
-    // Start is called before the first frame update
-    void Start()
+    public override HashSet<GameObject> GetDestrPattern()
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        HashSet<GameObject> gemsToDestroy = new HashSet<GameObject>
+        {
+            this.gameObject
+        };
+        gemsToDestroy.AddRange(gemList.GetRow(this.pos.y));
+        return gemsToDestroy;
     }
 }

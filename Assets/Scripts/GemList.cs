@@ -7,15 +7,9 @@ using UnityEngine;
 public class GemList : MonoBehaviour, IEnumerable<GameObject>
 {
     private List<List<GameObject>> gemList;
+    public int colss;
+    public int rowss;
 
-    private void Awake()
-    {
-        this.gemList = new List<List<GameObject>>();
-        for (int i = 0; i < FieldParams.cols; i++)
-        {
-            gemList.Add(new List<GameObject>(new GameObject[FieldParams.rows])); // Initialize each row with columns
-        }
-    }
     public IEnumerator<GameObject> GetEnumerator()
     {
         // Iterate through each row
@@ -64,32 +58,42 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
             }
         }
     }
-
-    public int bombCount
+    
+    public void InitializeGemList(int rows, int cols)
     {
-        get
+        this.gemList = new List<List<GameObject>>();
+        for (int i = 0; i < cols; i++)
         {
-            int bombCount = 0;
-            foreach (var gem in this)
-            {
-                if (gem != null && gem.GetComponent<DefaultGem>().type == GemType.Bomb) bombCount++;
-            }
-            return bombCount;
+            gemList.Add(new List<GameObject>(new GameObject[rows])); // Initialize each row with columns
         }
+
+        rowss = rows;
+        colss = cols;
     }
+
+    public List<GameObject> GetRow(float rowIndex)
+    {
+        List<GameObject> rowGems = new List<GameObject>();
+        for(int col = 0; col < colss; col++)
+        {
+            rowGems.Add(this[col, rowIndex]);
+        }
+        return rowGems;
+    }
+
     public HashSet<GameObject> FindMatches()
     {
         HashSet<GameObject> matches = new HashSet<GameObject>();
 
         foreach(var gem in this)
         {
-            var horizontalNeighbours = gem.GetComponent<DefaultGem>().GetNeighbours()[0];
-            var verticalNeighbours = gem.GetComponent<DefaultGem>().GetNeighbours()[1];
-            GemType gemType = gem.GetComponent<DefaultGem>().type;
+            var horizontalNeighbours = gem.GetComponent<DefaultObject>().GetHorizontalNeighbours();
+            var verticalNeighbours = gem.GetComponent<DefaultObject>().GetVerticalNeighbours();
+
             if (horizontalNeighbours[0] != null &&
                 horizontalNeighbours[1] != null && 
-                horizontalNeighbours[0].GetComponent<DefaultGem>().type == gemType && 
-                horizontalNeighbours[1].GetComponent<DefaultGem>().type == gemType)
+                Utilities.AreSameType(horizontalNeighbours[0], gem) && 
+                Utilities.AreSameType(horizontalNeighbours[1], gem))
             {
                 matches.Add(gem);
                 matches.AddRange(horizontalNeighbours);
@@ -97,61 +101,53 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
 
             if (verticalNeighbours[0] != null &&
-                verticalNeighbours[1] != null && 
-                verticalNeighbours[0].GetComponent<DefaultGem>().type == gemType && 
-                verticalNeighbours[1].GetComponent<DefaultGem>().type == gemType)
+                verticalNeighbours[1] != null &&
+                Utilities.AreSameType(verticalNeighbours[0], gem) &&
+                Utilities.AreSameType(verticalNeighbours[1], gem))
             {
                 matches.Add(gem);
                 matches.AddRange(verticalNeighbours);
             }
-        }
-        return matches;
-    }
-
-    public HashSet<GameObject> FindBombMatches()
-    {
-        HashSet<GameObject> bombs = new HashSet<GameObject>();
-        HashSet<GameObject> bombMatches = new HashSet<GameObject>();
-
-        foreach(var gem in this)
-        {
-            if(gem.GetComponent<DefaultGem>().type == GemType.Bomb) bombs.Add(gem);
-        }
-
-        foreach (var bomb in bombs)
-        {
-            var horizontalNeighbours = bomb.GetComponent<DefaultGem>().GetNeighbours()[0];
-            var verticalNeighbours = bomb.GetComponent<DefaultGem>().GetNeighbours()[1];
 
             if (horizontalNeighbours[0] != null &&
                 horizontalNeighbours[1] != null &&
-                horizontalNeighbours[0].GetComponent<DefaultGem>().type == horizontalNeighbours[1].GetComponent<DefaultGem>().type)
+                ((Utilities.AreSameType(horizontalNeighbours[0], gem) && Utilities.AreBomb(horizontalNeighbours[1])) || 
+                 (Utilities.AreSameType(horizontalNeighbours[1], gem) && Utilities.AreBomb(horizontalNeighbours[0])) ))
             {
-                if(horizontalNeighbours[0].GetComponent<DefaultGem>().type == GemType.Bomb)
-                {
-                    bombMatches.AddRange(this);
-                    continue;
-                }
-                bombMatches.AddRange(bomb.GetComponent<Bomb>().GetDestrPattern());
-                continue;
+                matches.Add(gem);
+                matches.AddRange(horizontalNeighbours);
             }
 
             if (verticalNeighbours[0] != null &&
                 verticalNeighbours[1] != null &&
-                verticalNeighbours[0].GetComponent<DefaultGem>().type == verticalNeighbours[1].GetComponent<DefaultGem>().type)
+                ((Utilities.AreSameType(verticalNeighbours[0], gem) && Utilities.AreBomb(verticalNeighbours[1])) ||
+                 (Utilities.AreSameType(verticalNeighbours[1], gem) && Utilities.AreBomb(verticalNeighbours[0])) ))
             {
-                if (verticalNeighbours[0].GetComponent<DefaultGem>().type == GemType.Bomb)
+                matches.Add(gem);
+                matches.AddRange(verticalNeighbours);
+            }
+
+            if (horizontalNeighbours[0] != null &&
+                horizontalNeighbours[1] != null &&
+                Utilities.AreBomb(gem))
+            {
+                if (Utilities.AreSameType(horizontalNeighbours[0], horizontalNeighbours[1]))
                 {
-                    bombMatches.AddRange(this);
-                    continue;
+                    matches.Add(gem);
+                    matches.AddRange(horizontalNeighbours);
                 }
-                bombMatches.AddRange(bomb.GetComponent<Bomb>().GetDestrPattern());
+                
+                if(Utilities.AreSameType(verticalNeighbours[0], verticalNeighbours[1]))
+                {
+                    matches.Add(gem);
+                    matches.AddRange(verticalNeighbours);
+                }
             }
 
         }
-
-        return bombMatches;
+        return matches;
     }
+
 
     IEnumerator IEnumerable.GetEnumerator()
     {
@@ -169,26 +165,26 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
                   .ToList();
         foreach (GameObject gem in gems)
         {
-            List<GameObject> neighbours = gem.GetComponent<DefaultGem>().GetNeighbours().SelectMany(x => x).ToList();
+            List<GameObject> neighbours = gem.GetComponent<DefaultObject>().GetNeighbours().SelectMany(x => x).ToList();
             foreach (GameObject neighbour in neighbours)
             {
                 if (neighbour == null) continue;
-                Vector3 gemPos = gem.GetComponent<DefaultGem>().pos;
-                Vector3 neighbourPos = neighbour.GetComponent<DefaultGem>().pos;
+                Vector3 gemPos = gem.GetComponent<DefaultObject>().pos;
+                Vector3 neighbourPos = neighbour.GetComponent<DefaultObject>().pos;
 
                 this[gemPos.x, gemPos.y] = neighbour;
                 this[neighbourPos.x, neighbourPos.y] = gem;
                 
-                gem.GetComponent<DefaultGem>().pos = neighbourPos;
-                neighbour.GetComponent<DefaultGem>().pos = gemPos;
+                gem.GetComponent<DefaultObject>().pos = neighbourPos;
+                neighbour.GetComponent<DefaultObject>().pos = gemPos;
 
                 if (FindMatches().Count >= 3)
                 {
                     this[gemPos.x, gemPos.y] = gem;
                     this[neighbourPos.x, neighbourPos.y] = neighbour;
 
-                    gem.GetComponent<DefaultGem>().pos = gemPos;
-                    neighbour.GetComponent<DefaultGem>().pos = neighbourPos;
+                    gem.GetComponent<DefaultObject>().pos = gemPos;
+                    neighbour.GetComponent<DefaultObject>().pos = neighbourPos;
 
                     return false;
                 }
@@ -196,8 +192,8 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
                 this[gemPos.x, gemPos.y] = gem;
                 this[neighbourPos.x, neighbourPos.y] = neighbour;
 
-                gem.GetComponent<DefaultGem>().pos = gemPos;
-                neighbour.GetComponent<DefaultGem>().pos = neighbourPos;
+                gem.GetComponent<DefaultObject>().pos = gemPos;
+                neighbour.GetComponent<DefaultObject>().pos = neighbourPos;
             }
         }
         return true;

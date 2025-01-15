@@ -11,6 +11,13 @@ public class Gem : DefaultGem
             this.gameObject
         };
     }
+
+    public override IEnumerator StartDestroyAnimation()
+    {
+        Animator gemAnimator = this.gameObject.GetComponent<Animator>();
+        gemAnimator.Play("CollapseGem");
+        yield return new WaitForSeconds(gemAnimator.GetCurrentAnimatorStateInfo(0).length - 0.5f);
+    }
     // Start is called before the first frame update
     void Start()
     {
