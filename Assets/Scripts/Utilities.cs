@@ -1,5 +1,3 @@
-
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -23,31 +21,53 @@ public class Utilities
         return firstGem.GetComponent<DefaultObject>().type == secondGem.GetComponent<DefaultObject>().type;
     }
 
-    internal static bool AreBomb(GameObject gem)
+    internal static bool IsBomb(GameObject gem)
     {
         if(gem == null) return false;
         ObjType gemType = gem.GetComponent<DefaultObject>().type;
         return (gemType == ObjType.Bomb || gemType == ObjType.RowBomb || gemType == ObjType.ColumnBomb);
     }
 
-    internal static bool AreBomb(DefaultObject gem)
+    internal static bool IsBomb(DefaultObject gem)
     {
         if (gem == null) return false;
         ObjType gemType = gem.type;
         return (gemType == ObjType.Bomb || gemType == ObjType.RowBomb || gemType == ObjType.ColumnBomb);
     }
-    internal static bool AreBlock(GameObject obj)
+    internal static bool IsBlock(GameObject obj)
     {
         if (obj == null) return false;
         ObjType objType = obj.GetComponent<DefaultObject>().type;
         return (objType == ObjType.IceBlock || objType == ObjType.UnbreakableBlock);
     }
 
-    internal static bool AreBlock(DefaultObject obj)
+    internal static bool IsBlock(DefaultObject obj)
     {
         if (obj == null) return false;
         ObjType objType = obj.type;
         return (objType == ObjType.IceBlock || objType == ObjType.UnbreakableBlock);
+    }
+    internal static bool CheckPattern(List<GameObject> gems, out GameObject gemToConvert, out ObjType gemType)
+    {
+        gemType = ObjType.None;
+        if (IsCrossPattern(gems, out gemToConvert))
+        {
+            gemType = ObjType.Bomb;
+            return true;
+        }
+
+        if (IsLongHorizontalPattern(gems, out gemToConvert))
+        {
+            gemType = ObjType.RowBomb;
+            return true;
+        }
+
+        if (IsLongVerticalPattern(gems, out gemToConvert))
+        {
+            gemType = ObjType.ColumnBomb;
+            return true;
+        }   
+        return false;
     }
     internal static bool IsCrossPattern(List<GameObject> gems, out GameObject gemToConvert)
     {

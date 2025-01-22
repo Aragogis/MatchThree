@@ -1,10 +1,11 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 using System;
-using Unity.VisualScripting;
-using System.Net.NetworkInformation;
+using UnityEditor.VersionControl;
+
 
 public class LevelEditor : EditorWindow
 {
@@ -20,11 +21,15 @@ public class LevelEditor : EditorWindow
     private Dictionary<ObjType, int> questData = new Dictionary<ObjType, int>();
     private ObjType selectedObjType = ObjType.Red; // Adjust this to your enum's default value
     private int questCount = 0;
+    private int turns;
+    private int levelCount;
+
     private void LoadGemSprites()
     {
         objSprites = new Dictionary<ObjType, Sprite>();
-        for (int type = 1; type <= Enum.GetValues(typeof(ObjType)).Length; type++)
+        for (int type = 0; type <= Enum.GetValues(typeof(ObjType)).Length; type++)
         {
+            if ((ObjType)type == ObjType.None) continue;
             string currentName = Enum.GetName(typeof(ObjType), (ObjType)type);
             objSprites.Add((ObjType)type, AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/" + currentName + ".png"));
         }
@@ -58,6 +63,12 @@ public class LevelEditor : EditorWindow
             CreateGrid();
         }
 
+        GUILayout.Label("Select level number", EditorStyles.label);
+        levelCount = EditorGUILayout.IntField(levelCount);
+
+        GUILayout.Label("Select number of turns", EditorStyles.label);
+        turns = EditorGUILayout.IntSlider(turns, 0, 30);
+
         // Select gem type
         GUILayout.Label("Select Gem Type", EditorStyles.label);
         selectedType = GUILayout.Toolbar(selectedType, objectTypes);
@@ -85,7 +96,7 @@ public class LevelEditor : EditorWindow
         // Save button
         if (GUILayout.Button("Save Level"))
         {
-            SaveGridToJSON();
+            SaveLevel();
         }
     }
 
@@ -131,22 +142,37 @@ public class LevelEditor : EditorWindow
                 // Detect click to modify the cell
                 if (Event.current.type == EventType.MouseDown && cellRect.Contains(Event.current.mousePosition))
                 {
-                    grid[x, gridRows-y-1] = (ObjType)(selectedType + 1);
+                    grid[x, gridRows-y-1] = (ObjType)(selectedType);
                     Repaint(); // Redraw the window
                 }
             }
         }
     }
 
-    private void SaveGridToJSON()
+    private void SaveLevel()
     {
-        string json = JsonUtility.ToJson(new GridData(gridCols, gridRows, grid, questData), true);
-
-        string path = EditorUtility.SaveFilePanel("Save Level", "", "LevelData.json", "json");
-        if (!string.IsNullOrEmpty(path))
+        LevelData level = ScriptableObject.CreateInstance<LevelData>();
+        level.columns = gridCols;
+        level.rows = gridRows;
+        level.turns = turns;
+        level.gems = new List<int>();
+        for (int i = 0; i < level.columns; i++)
         {
-            File.WriteAllText(path, json);
-            Debug.Log("Level saved to " + path);
+            for (int j = 0; j < level.rows; j++)
+            {
+                level.gems.Add((int)grid[i, j]);
+            }
         }
+
+        level.quests = new List<QuestEntry>();
+        foreach (var quest in questData)
+        {
+            level.quests.Add(new QuestEntry { type = quest.Key, count = quest.Value });
+        }
+
+        AssetDatabase.CreateAsset(level, "Assets/Resources/Levels/Level" + levelCount + ".asset");
+        AssetDatabase.SaveAssets();
     }
 }
+
+#endif

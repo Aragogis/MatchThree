@@ -1,7 +1,7 @@
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class ScoreManager : MonoBehaviour
 {
@@ -9,8 +9,36 @@ public class ScoreManager : MonoBehaviour
     private QuestData questData;
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI questText;
+    public Slider turnsSlider;
     public GameObject levelCompleted;
+    public int turnsLeft;
 
+    public int TurnsLeft
+    {
+        get => turnsLeft;
+        set
+        {
+            turnsLeft = value;
+            UpdateTurnsSlider();
+        }
+    }
+
+    private void UpdateTurnsSlider()
+    {
+        turnsSlider.value = turnsLeft;
+    }
+
+    public void DecreaseTurns()
+    {
+        TurnsLeft -= 1;
+        if (TurnsLeft <= 0) Debug.Log("Game Over");
+    }
+
+    public void InitializeTurnsSlider(int turnsData)
+    {
+        turnsSlider.maxValue = turnsData;
+        TurnsLeft = turnsData;
+    }
     public int CurrentScore 
     {
         get => currentScore; 
@@ -34,16 +62,15 @@ public class ScoreManager : MonoBehaviour
     private void OnEnable()
     {
         GameEvents.OnObjectDestroyed += CheckQuestProgress;
-    }
-    private void Start()
-    {
         UpdateScoreText();
     }
+
     public void UpdateScore(HashSet<GameObject> gems)
     {
         int scoreSum = 0;
         foreach (var gem in gems)
         {
+            if(gem == null) continue;
             ObjType gemType = gem.GetComponent<DefaultObject>().type;
             scoreSum += FieldParams.gemsValue[gemType];
         }

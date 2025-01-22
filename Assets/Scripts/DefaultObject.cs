@@ -4,7 +4,7 @@ using UnityEngine;
 
 public abstract class DefaultObject : MonoBehaviour
 {
-    [SerializeField] public ObjType type;
+    public ObjType type;
     public GemList gemList;
     public Vector3 pos;
 

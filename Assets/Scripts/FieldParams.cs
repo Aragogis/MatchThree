@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine;
 
 public enum ObjType
 {
+    None,
     Red = 1,
     Pink,
     Green,
@@ -42,35 +42,6 @@ public class FieldParams
     };
 }
 
-[System.Serializable]
-public class GridData
-{
-    public int columns;
-    public int rows;
-    public List<int> gems;
-    public List<QuestEntry> quests;
-    public GridData(int width, int height, ObjType[,] cells, Dictionary<ObjType, int> questsDict)
-    {
-        columns = width;
-        rows = height;
-
-        // Convert the 2D array to a 1D list
-        gems = new List<int>(width * height);
-        quests = new List<QuestEntry>();
-
-        for (int i = 0; i < columns; i++)
-        {
-            for (int j = 0; j < rows; j++)
-            {
-                gems.Add((int)cells[i, j]); // Enum values are stored as ints
-            }
-        }
-        foreach (var quest in questsDict)
-        {
-            quests.Add(new QuestEntry { type = quest.Key, count = quest.Value });
-        }
-    }
-}
 
 [System.Serializable]
 public struct QuestEntry

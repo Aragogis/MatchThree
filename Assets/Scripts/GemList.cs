@@ -87,6 +87,7 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
         foreach(var gem in this)
         {
+            if(gem is null) continue;
             var horizontalNeighbours = gem.GetComponent<DefaultObject>().GetHorizontalNeighbours();
             var verticalNeighbours = gem.GetComponent<DefaultObject>().GetVerticalNeighbours();
 
@@ -111,8 +112,8 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
             if (horizontalNeighbours[0] != null &&
                 horizontalNeighbours[1] != null &&
-                ((Utilities.AreSameType(horizontalNeighbours[0], gem) && Utilities.AreBomb(horizontalNeighbours[1])) || 
-                 (Utilities.AreSameType(horizontalNeighbours[1], gem) && Utilities.AreBomb(horizontalNeighbours[0])) ))
+                ((Utilities.AreSameType(horizontalNeighbours[0], gem) && Utilities.IsBomb(horizontalNeighbours[1])) || 
+                 (Utilities.AreSameType(horizontalNeighbours[1], gem) && Utilities.IsBomb(horizontalNeighbours[0])) ))
             {
                 matches.Add(gem);
                 matches.AddRange(horizontalNeighbours);
@@ -120,8 +121,8 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
             if (verticalNeighbours[0] != null &&
                 verticalNeighbours[1] != null &&
-                ((Utilities.AreSameType(verticalNeighbours[0], gem) && Utilities.AreBomb(verticalNeighbours[1])) ||
-                 (Utilities.AreSameType(verticalNeighbours[1], gem) && Utilities.AreBomb(verticalNeighbours[0])) ))
+                ((Utilities.AreSameType(verticalNeighbours[0], gem) && Utilities.IsBomb(verticalNeighbours[1])) ||
+                 (Utilities.AreSameType(verticalNeighbours[1], gem) && Utilities.IsBomb(verticalNeighbours[0])) ))
             {
                 matches.Add(gem);
                 matches.AddRange(verticalNeighbours);
@@ -129,7 +130,7 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
             if (horizontalNeighbours[0] != null &&
                 horizontalNeighbours[1] != null &&
-                Utilities.AreBomb(gem))
+                Utilities.IsBomb(gem))
             {
                 if (Utilities.AreSameType(horizontalNeighbours[0], horizontalNeighbours[1]))
                 {
@@ -145,6 +146,7 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
             }
 
         }
+        matches.RemoveWhere(item => item == null);
         return matches;
     }
 
@@ -156,7 +158,23 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
 
 
 
-
+    public bool AnyDroppableNullSpaces()
+    {
+        for (int x = 0; x < colss; x++)
+        {
+            for (int y = 0; y < rowss - 1; y++)
+            {
+                if (this[x, y] == null)
+                {
+                    if (!Utilities.IsBlock(this[x, y + 1]) && this[x, y + 1] != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
 
     public bool CheckGameOver() // todo include special gems check
     {

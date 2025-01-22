@@ -1,0 +1,35 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3adf75af31ed017459cfcccf661009f9, type: 3}
+  m_Name: GemObjects
+  m_EditorClassIdentifier: 
+  gemEntries:
+  - key: 1
+    value: {fileID: 1963814795179650238, guid: 172b0fb7d83fee849ba6cf2eaee3d96e, type: 3}
+  - key: 2
+    value: {fileID: 877305921100536338, guid: 505a0d82d3e8b8a47a36c10a4a066135, type: 3}
+  - key: 3
+    value: {fileID: 1248848411321032781, guid: e4687cf80bb07c74d9fa5cbacf032a68, type: 3}
+  - key: 4
+    value: {fileID: 8704306891080306177, guid: 32bf38e07dba97141b43b3ea8ce20447, type: 3}
+  - key: 5
+    value: {fileID: 2118817002730418259, guid: a1e034a2fb260e34899062c53cb02f30, type: 3}
+  - key: 6
+    value: {fileID: 1963814795179650238, guid: 7ad92edee8da32240b02d9b9e6dc9a9d, type: 3}
+  - key: 7
+    value: {fileID: 7204856371895735800, guid: cbab1da4b5e2016469a2f08059016b72, type: 3}
+  - key: 8
+    value: {fileID: 9108379927842564278, guid: f4fdd608b3c624c4a8cb6592e9e5c333, type: 3}
+  - key: 9
+    value: {fileID: 3648228019851618283, guid: 15f0877dd49a9464c9cbc5eb3361132c, type: 3}
+  - key: 10
+    value: {fileID: 906128049414180613, guid: ef42a45b45328234190ef1da647abdf2, type: 3}
