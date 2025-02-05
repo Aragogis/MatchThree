@@ -74,3 +74,18 @@ crashlytics-build.properties
 /Assets/Levels
 /Assets/Dark UI.meta
 /Assets/Levels.meta
+/Assets/Scripts/FirebaseParams.cs
+/user.keystore
+/Assets/google-services.json
+/Assets/google-services.json.meta
+/Assets/Editor Default Resources
+/Assets/ExternalDependencyManager
+/Assets/Firebase
+/Assets/GeneratedLocalRepo
+/Assets/GoogleSignIn
+/Assets/Plugins
+/Assets/StreamingAssets
+/ProjectSettings/AndroidResolverDependencies.xml
+/ProjectSettings/EditorBuildSettings.asset
+/ProjectSettings/GvhProjectSettings.xml
+/ProjectSettings/ProjectSettings.asset
