@@ -10,6 +10,11 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
     public int colss;
     public int rowss;
 
+    void OnEnable()
+    {
+        GameEvents.OnGameOver += Clear;
+        GameEvents.OnQuestCompleted += Clear;
+    }
     public IEnumerator<GameObject> GetEnumerator()
     {
         // Iterate through each row
@@ -81,6 +86,14 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
         return rowGems;
     }
 
+    public void Clear()
+    {
+        foreach (var gem in this)
+        {
+            if(gem != null) Destroy(gem.gameObject); 
+        }
+        this.gemList.Clear();
+    }
     public HashSet<GameObject> FindMatches()
     {
         HashSet<GameObject> matches = new HashSet<GameObject>();
@@ -214,6 +227,7 @@ public class GemList : MonoBehaviour, IEnumerable<GameObject>
                 neighbour.GetComponent<DefaultObject>().pos = neighbourPos;
             }
         }
+        GameEvents.TriggerGameOver();
         return true;
     }
 }

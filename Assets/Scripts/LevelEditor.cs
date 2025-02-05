@@ -2,9 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.IO;
 using System;
-using UnityEditor.VersionControl;
 
 
 public class LevelEditor : EditorWindow

@@ -7,8 +7,8 @@ public class IceBlock : DefaultBlock
 
     public override void DecreaseDurability()
     {
-        this.durability -= 1;
-        if (this.durability == 0) Destroy(this.gameObject);
+        durability -= 1;
+        if (durability == 0) Destroy(this.gameObject);
     }
 
     public override HashSet<GameObject> GetDestrPattern()

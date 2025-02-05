@@ -10,7 +10,6 @@ public class ScoreManager : MonoBehaviour
     public TextMeshProUGUI scoreText;
     public TextMeshProUGUI questText;
     public Slider turnsSlider;
-    public GameObject levelCompleted;
     public int turnsLeft;
 
     public int TurnsLeft
@@ -30,8 +29,9 @@ public class ScoreManager : MonoBehaviour
 
     public void DecreaseTurns()
     {
+        if (turnsLeft <= 0) return;
         TurnsLeft -= 1;
-        if (TurnsLeft <= 0) Debug.Log("Game Over");
+        if (TurnsLeft <= 0) GameEvents.TriggerGameOver();
     }
 
     public void InitializeTurnsSlider(int turnsData)
@@ -93,14 +93,11 @@ public class ScoreManager : MonoBehaviour
 
     private void CheckQuestProgress(ObjType objType)
     {
+        if (questData.isFinished) return;
         if (questData.quests.ContainsKey(objType))
         {
             questData.DecreaseCount(objType);
             UpdateQuestText();
-            if (questData.isFinished)
-            {
-                Debug.Log("Quest Completed!");
-            }
         }
     }
 }

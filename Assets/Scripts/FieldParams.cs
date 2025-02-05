@@ -20,7 +20,8 @@ public enum GameState
 {
     None,
     SelectionStarted,
-    Animating
+    Animating,
+    LevelFinished
 }
 public class FieldParams
 {

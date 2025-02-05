@@ -2,21 +2,20 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
 using Random = UnityEngine.Random;
-using System.IO;
-using System;
+
 public class GemManager : MonoBehaviour
 {
-    private GameObject gemSpawnAnchor;
-    private ScoreManager scoreManager;
+    public GameObject gemSpawnAnchor;
+    public ScoreManager scoreManager;
     public LevelData level;
     private GameState state = GameState.None;
     private GameObject gemHit;
-    private GemList gemList;
+    public GemList gemList;
     private List<GameObject> currentPair = new List<GameObject>();
     public Dictionary<ObjType, GameObject> gemObjects;
+    public FirebaseManager firebaseManager;
     internal GameObject GetNewGem()
     {
         return gemObjects[(ObjType)Random.Range(1, 6)];
@@ -70,17 +69,12 @@ public class GemManager : MonoBehaviour
         return gem;
     }
 
-
-    void Start()
+    public void StartLevel()
     {
-        gemList = FindObjectOfType<GemList>();
-        gemSpawnAnchor = GameObject.FindWithTag("GemAnchor");
-        scoreManager = GameObject.FindWithTag("ScoreManager").GetComponent<ScoreManager>();
         LoadLevel(level);
         CenterGrid();
         StartCoroutine(MatchController());
     }
-
 
     void Update()
     {
@@ -153,6 +147,14 @@ public class GemManager : MonoBehaviour
         }
 
         currentPair.Clear();
+        if (scoreManager.QuestData.isFinished)
+        {
+            firebaseManager.user.UpdateScore(level.levelId, scoreManager.CurrentScore);
+            GameEvents.TriggerQuestCompleted();
+            state = GameState.None;
+            yield break;
+        }
+        gemList.CheckGameOver();
         state = GameState.None;
     }
 
@@ -187,6 +189,9 @@ public class GemManager : MonoBehaviour
 
         foreach (var matchGroup in matchGroups)
         {
+            //test vibration
+            Handheld.Vibrate();
+            //
             if (matchGroup.Any(x => Utilities.IsBomb(x))) continue;
 
             if(Utilities.CheckPattern(matchGroup, out GameObject gemToConvert, out ObjType gemType))
@@ -206,7 +211,9 @@ public class GemManager : MonoBehaviour
             gemsToDestroy.AddRange(gem.GetComponent<DefaultObject>().GetDestrPattern());
         }
         gemsToDestroy.RemoveWhere(x => x == null);
+
         scoreManager.UpdateScore(gemsToDestroy);
+
         List<Coroutine> destroyTasks = new List<Coroutine>();
         foreach (var gem in gemsToDestroy)
         {
@@ -315,14 +322,22 @@ public class GemManager : MonoBehaviour
 
     private void CreateNewGems()
     {
+        ObjType prevGemType = ObjType.None;
         for (int column = 0; column < gemList.colss; column++)
         {
             if (gemList[column, gemList.rowss - 1] == null)
             {
-                GameObject newGem = GetNewGem();
+                GameObject newGem;
+                do
+                {
+                    newGem = GetNewGem();
+                } while (newGem.GetComponent<DefaultObject>().type == prevGemType);
+
                 gemList[column, gemList.rowss - 1] = Instantiate(newGem, new Vector3(gemSpawnAnchor.transform.position.x + column, gemSpawnAnchor.transform.position.y + gemList.rowss - 1), Quaternion.identity, gemSpawnAnchor.transform);
                 gemList[column, gemList.rowss - 1].GetComponent<DefaultObject>().pos = new Vector3(column, gemList.rowss - 1);
+                prevGemType = newGem.GetComponent<DefaultObject>().type;
             }
+
         }
     }
 
@@ -347,6 +362,16 @@ public class GemManager : MonoBehaviour
         gemList[startListPos.x, startListPos.y] = null;
     }
 
+    public void ClearLevel()
+    {
+        state = GameState.LevelFinished; 
+        foreach(var gem in gemList)
+        {
+            if(gem != null) Destroy(gem.gameObject);
+        }
+        gemList.Clear();
+        
+    }
     void CenterGrid()
     {
         float gridWidth = (gemList.colss - 1);
